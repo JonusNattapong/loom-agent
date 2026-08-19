@@ -1,7 +1,7 @@
 /** Versioned coordinator/remote-worker protocol primitives (V0.8). */
 export const PROTOCOL_VERSION = "0.8" as const;
 
-export type ProtocolType = "register" | "heartbeat" | "dispatch" | "renew" | "ack" | "result" | "error";
+export type ProtocolType = "register" | "heartbeat" | "dispatch" | "accepted" | "started" | "renew" | "ack" | "result" | "error" | "disconnect";
 export type WorkerTrust = "untrusted" | "trusted" | "approved";
 export type WorkerIdentity = { workerId: string; name?: string; trust: WorkerTrust; instanceId: string };
 export type WorkerLoad = { running: number; capacity: number };
@@ -76,3 +76,14 @@ export class SequenceJournal<T=unknown> {
 }
 
 export function assertFencingToken(expected:number, received:LeaseToken){if(received.fencingToken!==expected)throw new Error("stale fencing token");}
+
+export interface WorkerTransport {send(envelope:ProtocolEnvelope):Promise<void>|void;close():Promise<void>|void;onMessage(handler:(envelope:ProtocolEnvelope)=>void):void;onDisconnect(handler:(error?:unknown)=>void):void;}
+export interface RemoteDispatchResult {assignmentId:string;workerId:string;lease:LeaseToken;}
+export class RemoteFabricController {
+ private readonly transports=new Map<string,WorkerTransport>(); private readonly journals=new Map<string,SequenceJournal>();
+ constructor(private readonly state:any,private readonly registry:WorkerRegistry=new WorkerRegistry(),private readonly leases:LeaseManager=new LeaseManager()){}
+ attach(worker:WorkerIdentity,transport:WorkerTransport,capabilities:WorkerCapability[]|string[],load:WorkerLoad={running:0,capacity:1}){this.state.registerWorker({workerId:worker.workerId,name:worker.name,capabilities,metadata:{trust:worker.trust,instanceId:worker.instanceId}});this.registry.register(worker,capabilities,load);this.transports.set(worker.workerId,transport);this.journals.set(worker.workerId,new SequenceJournal(worker));transport.onMessage(e=>void this.receive(e));transport.onDisconnect(()=>this.state.setWorkerStatus(worker.workerId,"offline"));return worker;}
+ async dispatch(job:RemoteJob):Promise<RemoteDispatchResult>{const worker=new DeterministicRouter(this.registry).route(job);if(!worker)throw new Error("no compatible online worker");const transport=this.transports.get(worker.workerId);if(!transport)throw new Error("worker transport unavailable");const lease=this.leases.acquire(job.jobId,worker.workerId,30000);const assignment=this.state.assignRemote({workerId:worker.workerId,payload:job.payload,taskId:job.jobId});this.state.acquireRemoteLease(assignment.id,worker.workerId,30000);const envelope=this.journals.get(worker.workerId)!.append("dispatch",{assignmentId:assignment.id,executionId:job.jobId,requirements:job.requiredCapabilities??[],payload:job.payload},lease);await transport.send(envelope);this.state.setWorkerStatus(worker.workerId,"online");return {assignmentId:assignment.id,workerId:worker.workerId,lease};}
+ async receive(envelope:ProtocolEnvelope){if(!isProtocolEnvelope(envelope))throw new Error("invalid protocol envelope");const worker=this.registry.get(envelope.sender.workerId);if(!worker)throw new Error("unregistered worker");if(envelope.type==="heartbeat"){this.registry.heartbeat(worker.identity.workerId,(envelope.payload as any)?.load);this.state.heartbeatWorker(worker.identity.workerId);return;}if(envelope.type==="ack"){this.journals.get(worker.identity.workerId)?.acknowledge(Number((envelope.payload as any)?.sequence??envelope.sequence));return;}if(envelope.lease&&!this.leases.validate((envelope.payload as any)?.executionId??"",envelope.lease))throw new Error("stale lease");const executionId=String((envelope.payload as any)?.executionId??"");if(executionId){const result=this.state.appendRemoteEvent({executionId,sequence:envelope.sequence,messageId:envelope.id,payload:envelope.payload});if(!result.accepted)throw new Error("expired remote execution");}}
+ async reconnect(workerId:string,lastAck:number){const t=this.transports.get(workerId),journal=this.journals.get(workerId);if(!t||!journal)throw new Error("worker is not attached");for(const envelope of journal.replay(lastAck))await t.send(envelope);this.state.heartbeatWorker(workerId,"online");}
+}

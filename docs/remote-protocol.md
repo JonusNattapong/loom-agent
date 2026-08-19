@@ -1,0 +1,3 @@
+# Remote protocol
+
+Envelopes use protocol version `0.8`, message IDs, sender identity, connection identity, epoch, direction-specific sequence numbers, payloads, and optional lease tokens. Inbound envelopes are validated before state mutation. Unsupported versions, malformed types/IDs/sequences, stale epochs, and sequence gaps are rejected. Outbound envelopes are recorded in SQLite before transport send. ACKs are cumulative and only clear persisted messages up to a bounded sequence; reconnect replays remaining unacknowledged envelopes. Network delivery is at-least-once; logical dedupe is durable.

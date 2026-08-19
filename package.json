@@ -8,7 +8,7 @@
     "packages/bots"
   ],
   "scripts": {
-    "build": "tsc -b packages/core packages/state packages/providers packages/tools packages/context packages/skills packages/mcp packages/planner packages/coordinator packages/runtime packages/evals packages/cli packages/bots",
+    "build": "tsc -b packages/core packages/state packages/providers packages/tools packages/context packages/skills packages/mcp packages/planner packages/coordinator packages/runtime packages/adaptive packages/evals packages/cli packages/bots",
     "test": "vitest run",
     "test:watch": "vitest",
     "eval": "tsx packages/evals/src/cli.ts",

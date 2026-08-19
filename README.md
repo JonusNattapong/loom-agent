@@ -75,3 +75,7 @@ Additional provider, skills, MCP, and development guides are under [`docs/`](doc
 ## License
 
 No license file is currently included. Treat the repository as source-available only until the project adds one.
+
+## V0.6 adaptive execution
+
+Loom now includes model-assisted planning, capability-aware deterministic routing, bounded multi-round provider execution, semantic review, repair-ready review results, and targeted verification in `@loom/adaptive`. Runtime policy remains authoritative: model output is validated, tool permissions and approvals are unchanged, and deterministic fallback is used when structured model output is unavailable. See `docs/adaptive-planning.md`, `docs/semantic-review.md`, `docs/model-routing.md`, and `docs/verification.md`.

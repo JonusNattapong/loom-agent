@@ -8,6 +8,7 @@ describe("V0.4 eval harness",()=>{
       "fix failing tests","create file","modify multiple files","crash + resume","failed verification","denied tool call",
       "v0.4 parent to coder","v0.4 researcher to coder handoff","v0.4 coder reviewer repair","v0.4 bounded parallel tasks",
       "v0.4 child crash resume","v0.4 parent crash before consume","v0.4 cancellation hierarchy","v0.4 child approval resume",
+      "v0.6 planner fallback","v0.6 capability routing","v0.6 execution bounds","v0.6 crash planning recovery","v0.6 crash execution recovery","v0.6 crash review recovery",
     ]);
     expect(results.every(result=>result.passed),JSON.stringify(results)).toBe(true);
   });

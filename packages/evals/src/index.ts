@@ -3,6 +3,8 @@ import {AgentCoordinator,MultiAgentRuntime} from "@loom/coordinator";
 import {PlanEngine,VerifiedExecutionRuntime} from "@loom/planner";
 import {StateStore} from "@loom/state";
 import {ToolExecutor,ToolRegistry} from "@loom/tools";
+import {ModelAdaptivePlanner,MultiRoundExecutor,selectRole} from "@loom/adaptive";
+import type {Provider,ProviderResponse} from "@loom/core";
 
 export type EvalResult={name:string;passed:boolean;details:string};
 
@@ -65,9 +67,18 @@ async function multiAgentScenarios():Promise<EvalResult[]>{
   return results;
 }
 
+
+class AdaptiveEvalProvider implements Provider { readonly name="adaptive-eval"; private round=0; async complete():Promise<ProviderResponse>{this.round++; return this.round===1?{content:JSON.stringify({summary:"cycle",tasks:[{id:"a",title:"a",description:"a",role:"coder",dependencies:["b"]},{id:"b",title:"b",description:"b",role:"coder",dependencies:["a"]}]})}:{content:"done"};} }
+async function adaptiveScenarios():Promise<EvalResult[]> {
+ const planner=new ModelAdaptivePlanner({provider:new AdaptiveEvalProvider(),maxTasks:20,maxDepth:5}); const proposal=await planner.plan({goal:"fix tests",availableRoles:["researcher","coder","tester"]});
+ const routed=selectRole(["code-editing","testing"],[{role:"researcher",capabilities:["research"]},{role:"coder",capabilities:["code-editing","testing"]}]);
+ let calls=0; const execution=await new MultiRoundExecutor({name:"rounds",complete:async()=>({content:"done"})},{tool:async()=>{calls++;return "ok"}},{maxModelRounds:2}).run({taskId:"eval",goal:"fix",messages:[{role:"user",content:"fix"}]});
+ const state=new StateStore(":memory:"); const agent=state.createAgent("recovery"); const plan=state.createPlan(agent.id,"recover"); const recoveryProposal={summary:"recover",tasks:[]}; state.recordPlanRevision({planId:plan.id,rootAgentId:agent.id,version:1,proposal:recoveryProposal}); state.recordPlanRevision({planId:plan.id,rootAgentId:agent.id,version:1,proposal:recoveryProposal}); const planOnce=state.listPlanRevisions(plan.id).length===1; state.recordExecutionRound({rootAgentId:agent.id,taskId:"task",round:1,status:"checkpointed",messages:[]}); state.recordExecutionRound({rootAgentId:agent.id,taskId:"task",round:1,status:"checkpointed",messages:[]}); const executionOnce=state.listExecutionRounds("task").length===1; state.recordReview({rootAgentId:agent.id,taskId:"task",round:1,verdict:"reject",summary:"repair",issues:[]}); state.recordRepair({rootAgentId:agent.id,taskId:"task",round:1,reviewId:"task:review1",status:"created"}); state.recordRepair({rootAgentId:agent.id,taskId:"task",round:1,reviewId:"task:review1",status:"created"}); const reviewOnce=state.listReviews("task").length===1&&state.listRepairs("task").length===1; state.close(); return [{name:"v0.6 planner fallback",passed:proposal.source==="fallback"&&proposal.tasks.length===3,details:`source=${proposal.source}; tasks=${proposal.tasks.length}`},{name:"v0.6 capability routing",passed:routed.role==="coder",details:`role=${routed.role}`},{name:"v0.6 execution bounds",passed:execution.status==="completed"&&calls===0,details:`status=${execution.status}; rounds=${execution.rounds}`},{name:"v0.6 crash planning recovery",passed:planOnce,details:"plan revision idempotent"},{name:"v0.6 crash execution recovery",passed:executionOnce,details:"execution round idempotent"},{name:"v0.6 crash review recovery",passed:reviewOnce,details:"review and repair idempotent"}];
+}
+
 export async function runEvalHarness():Promise<EvalResult[]>{
   const results=await Promise.all([graphScenario("fix failing tests",{rejectOnce:true}),graphScenario("create file",{artifacts:1}),graphScenario("modify multiple files",{artifacts:3}),graphScenario("crash + resume",{crash:true}),graphScenario("failed verification",{alwaysReject:true})]);
   const registry=new ToolRegistry().register({name:"danger",description:"danger",execute:async()=>"unexpected"});
   try{await new ToolExecutor(registry,{permissions:{danger:"deny"}}).execute("danger",{});results.push({name:"denied tool call",passed:false,details:"tool executed"});}catch{results.push({name:"denied tool call",passed:true,details:"denied"});}
-  return [...results,...await multiAgentScenarios()];
+  return [...results,...await multiAgentScenarios(),...await adaptiveScenarios()];
 }

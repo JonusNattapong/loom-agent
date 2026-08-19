@@ -1,5 +1,31 @@
-# MCP
+---
+title: MCP tool integration
+version: 0.3
+category: how-to
+---
 
-Configure stdio MCP servers in `.loom/config.json` under `mcpServers`. Loom starts a configured command, performs MCP initialization, discovers tools, and adapts them into the same `ToolRegistry` used by native tools. MCP failures are reported and do not prevent the CLI from using native tools.
+# MCP tool integration
 
-MCP commands run with the Loom process environment. Do not place secrets in committed configuration.
+Configure stdio servers under `mcpServers` in `.loom/config.json`:
+
+```json
+{
+  "mcpServers": {
+    "example": {
+      "command": "node",
+      "args": ["path/to/server.js"],
+      "env": {"EXAMPLE_MODE": "safe"}
+    }
+  }
+}
+```
+
+At startup Loom spawns each configured command, sends MCP `initialize`, requests `tools/list`, converts discovered schemas to Loom `ToolDefinition` records, and registers adapters in the shared `ToolRegistry`. Calls use `tools/call`, and text content is normalized into a string.
+
+```bash
+npm run loom -- tools
+```
+
+An unavailable MCP server is reported on stderr; native tools remain available. MCP tool calls pass through the same permission and execution middleware as native tools.
+
+V0.3 supports line-delimited JSON-RPC over stdio only. It does not implement HTTP/SSE transports, request timeouts, reconnection, cancellation, progress notifications, or a full MCP lifecycle manager. MCP commands inherit the Loom process environment and are not sandboxed.

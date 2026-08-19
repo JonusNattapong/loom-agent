@@ -1,0 +1,32 @@
+# Loom Agent
+
+> Loom Agent V0.3 is a TypeScript, CLI-first, durable single-agent developer harness with persisted task graphs, verified execution, approvals, checkpoints, artifacts, SQLite recovery, tools, providers, skills, and MCP integration.
+
+## Setup
+
+- [README](README.md)
+- [Getting started](docs/getting-started.md)
+- [Development guide](docs/development.md)
+- [Configuration](docs/configuration.md)
+
+## Core concepts
+
+- [Architecture](docs/architecture.md)
+- [Task graph and verified execution](docs/task-graph.md)
+- [State, schema, and recovery](docs/state-and-recovery.md)
+- [Security model](docs/security.md)
+- [Known limitations](docs/limitations.md)
+
+## Operations
+
+- [CLI reference](docs/cli.md)
+- [Providers](docs/providers.md)
+- [Skills](docs/skills.md)
+- [MCP tools](docs/mcp.md)
+- [Tracing](docs/tracing.md)
+- [Evaluation harness](docs/evals.md)
+
+## Reference
+
+- [Package API reference](docs/api-reference.md)
+- [Full agent context](llms-full.txt)

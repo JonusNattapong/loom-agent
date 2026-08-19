@@ -1,12 +1,18 @@
-# Loom
+# Loom Agent
 
-Loom is a CLI-first, single-agent durable harness written in TypeScript. V0.3 adds persisted task graphs, explicit plan/execute/verify phases, reviewer-gated completion, durable approvals, task checkpoints, artifact tracking, failure policies, and a repeatable eval harness.
+Loom is a CLI-first, durable single-agent harness for developer tasks. V0.3 persists a task graph, separates planning from execution and verification, pauses for durable approvals, records task checkpoints and artifacts, and refuses to mark a plan complete until reviewer checks pass.
 
-It intentionally does not include a web or desktop UI, multi-agent orchestration, a daemon, scheduler, vector memory, embeddings, or a security sandbox.
+> Milestone: **Loom Agent V0.3 — Task Graph & Verified Execution**
+
+Loom V0.3 does not include multi-agent orchestration, a daemon, scheduler, web UI, desktop UI, vector memory, or a security sandbox.
+
+## Requirements
+
+- Node.js 22 or newer
+- Bun 1.x for dependency installation and development commands
+- Git for repository inspection and diff review
 
 ## Quickstart
-
-Requirements: Node.js 22+ and optionally Bun 1.x for development.
 
 ```bash
 bun install
@@ -17,46 +23,54 @@ npm run eval
 npm run loom -- run "fix all failing tests"
 npm run loom -- ps
 npm run loom -- inspect <agent-id>
-npm run loom -- trace <agent-id>
+```
+
+Loom stores durable state in `.loom/loom.db`. Override it with `LOOM_DB` when you need an isolated database.
+
+## Crash and resume
+
+`--max-tasks` provides a deterministic interruption point for development and evaluation:
+
+```bash
+npm run loom -- run "fix all failing tests" --max-tasks 3
+npm run loom -- inspect <agent-id>
 npm run loom -- resume <agent-id>
 ```
 
-The default database is `.loom/loom.db`; set `LOOM_DB` for another SQLite file. Existing databases migrate in place. `loom inspect` displays the plan, tasks, current task, latest `cp_...` checkpoint, retries, blocked reasons, and modified artifacts.
+`loom inspect` displays the persisted plan, task status, current task, latest `cp_...` checkpoint, retry information, blocked reason, and tracked artifacts.
 
-To exercise durable interruption deterministically:
+## Approval flow
 
-```bash
-loom run "fix all failing tests" --max-tasks 3
-loom inspect <agent-id>
-loom resume <agent-id>
-```
-
-## Approvals
-
-Permissions can be `allow`, `deny`, or `ask` in `.loom/config.json`. An `ask` tool call creates a durable request and pauses the task.
+Set a tool permission to `ask` in `.loom/config.json`. Loom creates a durable request and moves the plan to `waiting`.
 
 ```bash
-loom approvals
-loom approve <request-id>
-loom deny <request-id>
-loom resume <agent-id>
+npm run loom -- approvals
+npm run loom -- approve <request-id>
+npm run loom -- resume <agent-id>
 ```
 
-## Configuration and providers
+Use `loom deny <request-id>` to reject the operation. Denial fails the affected plan without replaying the tool call.
 
-Copy `.loom/config.example.json` to `.loom/config.json`. Precedence is CLI selection, environment variables, project config, then defaults. `LOOM_PROVIDER=openai`, `OPENAI_API_KEY`, `LOOM_MODEL`, and optional `OPENAI_BASE_URL` configure the real provider. The deterministic mock remains the default.
+## Documentation
 
-## Skills, memory, and tools
+- [Getting started](docs/getting-started.md)
+- [CLI reference](docs/cli.md)
+- [Configuration](docs/configuration.md)
+- [Architecture](docs/architecture.md)
+- [Task graph and verification](docs/task-graph.md)
+- [State, schema, and recovery](docs/state-and-recovery.md)
+- [Providers](docs/providers.md)
+- [Skills](docs/skills.md)
+- [MCP](docs/mcp.md)
+- [Tracing and observability](docs/tracing.md)
+- [Security model](docs/security.md)
+- [Evaluation harness](docs/evals.md)
+- [Package API reference](docs/api-reference.md)
+- [Development guide](docs/development.md)
+- [Known limitations](docs/limitations.md)
 
-```bash
-loom skills
-loom skills show code-review
-loom memory <agent-id>
-loom memory set <agent-id> hypothesis "the parser is dropping stderr"
-loom tools
-loom config
-```
+Agent-oriented entry points are available in [llms.txt](llms.txt) and [llms-full.txt](llms-full.txt).
 
-Native tools are workspace-scoped. Path traversal and symlink escapes are rejected. Shell commands run with the Loom process permissions, so Loom is not a security sandbox.
+## License
 
-See [docs/task-graph.md](docs/task-graph.md), [docs/architecture.md](docs/architecture.md), [docs/state-and-recovery.md](docs/state-and-recovery.md), [docs/skills.md](docs/skills.md), and [docs/mcp.md](docs/mcp.md).
+No license file is currently included. Treat the repository as source-available only until the project adds one.

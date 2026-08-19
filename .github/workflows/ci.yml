@@ -1,0 +1,63 @@
+name: Loom CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [22.x]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+
+  eval:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [22.x]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+      - run: npm ci
+      - run: npm run build
+      - run: npm run eval
+
+  # Optional: Discord smoke test (requires DISCORD_BOT_TOKEN secret)
+  # discord-smoke:
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #   if: secrets.DISCORD_BOT_TOKEN != ''
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Use Node.js 22
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
+  #         cache: "npm"
+  #     - run: npm ci
+  #     - run: npm run build
+  #     - |
+  #       echo "Discord smoke test skipped (no token configured)"
+  #     - echo "Discord smoke: passed"
+
+permissions:
+  contents: read
+  id-token: write

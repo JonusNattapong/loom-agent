@@ -10,11 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@loom/coordinator": "workspace:*",
-    "@loom/core": "workspace:*",
-    "@loom/state": "workspace:*"
+    "discord.js": "^14.27.0"
   },
-  "devDependencies": {
-    "typescript": "^5.5.0"
-  }
+  "devDependencies": {}
 }

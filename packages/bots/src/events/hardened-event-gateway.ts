@@ -12,26 +12,31 @@
  */
 import { StateStore } from "@loom/state";
 import { EnhancedBotSessionManager } from "../sessions/enhanced-session-manager";
-import { EventDedup } from "./events/dedup-store";
+import { EventDedup } from "./dedup-store";
 import { BotEvent, BotEventType, BotEventType as DiscordEventType } from "../types";
 import { OutboundBotMessage } from "../types";
+
+export interface AdaptiveBotRunner { run(input:{goal:string;session:any;rootAgentId?:string}):Promise<{rootAgentId:string;status:string;response:string}>; }
 
 export interface EventProcessingResult {
   status: "received" | "ignored" | "handled" | "approval-required" | "denied";
   session?: any;
   approvalId?: string;
   decisions: Record<string, boolean>;
+  response?: string;
 }
 
 export class EventGateway {
   private readonly state: StateStore;
   private readonly sessionManager: EnhancedBotSessionManager;
   private readonly dedup: EventDedup;
+  private readonly adaptive?: AdaptiveBotRunner;
 
-  constructor(state: StateStore, sessionManager?: EnhancedBotSessionManager) {
+  constructor(state: StateStore, sessionManager?: EnhancedBotSessionManager, adaptive?: AdaptiveBotRunner) {
     this.state = state;
     this.sessionManager = sessionManager || new EnhancedBotSessionManager(state);
     this.dedup = new EventDedup(state);
+    this.adaptive = adaptive;
   }
 
   /**
@@ -113,22 +118,21 @@ export class EventGateway {
       };
     }
 
-    // Step 7: Handle the event (execute agent, etc.)
-    // In a full implementation, this would trigger the bot runtime
-    // For now, mark as handled
-    await this.dedup.markHandled(
-      event.transport,
-      event.id,
-      event.botId
-    );
-
+    // Step 7: Execute the same adaptive pipeline used by CLI/runtime when configured.
+    let response: string | undefined;
+    if (this.adaptive) {
+      const session = sessionResult.session as any;
+      const run = await this.adaptive.run({goal:event.text??"",session,rootAgentId:session.rootAgentId});
+      session.rootAgentId = run.rootAgentId;
+      session.updatedAt = new Date().toISOString();
+      await this.sessionManager.saveSession(event, session);
+      response = run.response;
+      decisions['adaptive-planner'] = true;
+      decisions['verified'] = run.status === "completed";
+    }
+    await this.dedup.markHandled(event.transport,event.id,event.botId);
     decisions['handled'] = true;
-
-    return {
-      status: "handled",
-      session: routingDecision.session,
-      decisions,
-    };
+    return {status:"handled",session:sessionResult.session,decisions,response};
   }
 
   /**

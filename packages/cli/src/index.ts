@@ -10,6 +10,7 @@ import {createNativeTools,ToolExecutor,ToolRegistry} from "@loom/tools";
 import {SkillRuntime} from "@loom/skills";
 import {McpClient,mcpTools} from "@loom/mcp";
 import {PlanEngine,Reviewer,TaskExecutor,VerifiedExecutionRuntime} from "@loom/planner";
+import {AdaptiveOrchestrator} from "@loom/adaptive";
 
 type Config={
   provider?:string;model?:string;context?:{maxChars?:number};permissions?:Record<string,PermissionLevel>;
@@ -32,7 +33,7 @@ const args=argv.slice(1).filter(value=>!skipped.has(value));const state=new Stat
 async function loadTools(){for(const [name,server] of Object.entries(cfg.mcpServers??{})){try{const client=await new McpClient(server,(type,data)=>console.error(`[${type}]`,data)).connect();for(const tool of mcpTools(client))registry.register(tool);}catch(error){console.error(`MCP server ${name} unavailable: ${error instanceof Error?error.message:error}`);}}return registry;}
 function loadProvider():Provider{const name=process.env.LOOM_PROVIDER??cfg.provider??"mock";if(name==="openai")return new OpenAICompatibleProvider(undefined,process.env.LOOM_MODEL??cfg.model);return new MockProvider();}
 function output(value:unknown,human?:string){console.log(json?JSON.stringify(value,null,2):human??(typeof value==="string"?value:JSON.stringify(value,null,2)));}
-function usage(){console.log("loom run <goal> [--max-agents N] | ps | inspect <id> | resume <id> | trace <id> | agents | agent inspect|cancel <id> | delegations <id> | messages <id> | approve|deny <request-id>");}
+function usage(){console.log("loom run <goal> [--max-agents N] | plan <id> | reviews <id> | ps | inspect <id> | resume <id> | trace <id> | agents | agent inspect|cancel <id> | delegations <id> | messages <id> | approve|deny <request-id>");}
 
 function scopedPermissions(tools:ToolRegistry,allowedTools?:string[]):Record<string,PermissionLevel>{
   const permissions={...(cfg.permissions??{})};
@@ -85,7 +86,11 @@ function inspectHuman(agentId:string){
 
 try{
   if(command==="run"){
-    const goal=args.join(" ");if(!goal)throw new Error("goal is required");const agent=state.createAgentRecord({goal,role:"planner"});state.addTrace(agent.id,"agent.created",{goal});const plan=new PlanEngine(state).create(agent.id,goal);const result=await (await multiAgentRuntime()).run(agent.id,{maxTasks});output({agent:state.getAgent(agent.id),plan:result,tasks:state.listPlanTasks(plan.id),agents:agentTree(agent.id),delegations:state.listDelegations(agent.id)},`Agent: ${agent.id}\nPlan: ${plan.id}\nStatus: ${result.status}`);
+    const goal=args.join(" ");if(!goal)throw new Error("goal is required");const agent=state.createAgentRecord({goal,role:"planner"});state.addTrace(agent.id,"agent.created",{goal});const provider=loadProvider();const tools=await loadTools();const toolExecutor=new ToolExecutor(tools,{permissions:scopedPermissions(tools),ledger:state,approvals:state,artifacts:state,trace:(type,data)=>state.addTrace(agent.id,type,data)});const adaptive=new AdaptiveOrchestrator(state,provider,{maxModelRounds:12,maxToolCalls:30,provider,tool:(call,agentId,taskId)=>toolExecutor.execute(call.name,call.input,{agentId,taskId,toolCallId:call.id??`${taskId}:${call.name}`})});const result=await adaptive.run(agent.id,goal);const plan=state.getPlanForAgent(agent.id);output({agent:state.getAgent(agent.id),plan:result,tasks:plan?state.listPlanTasks(plan.id):[],agents:agentTree(agent.id),delegations:state.listDelegations(agent.id)},`Agent: ${agent.id}\nPlan: ${plan?.id??"none"}\nStatus: ${result.status}`);
+  }else if(command==="plan"){
+    const agent=state.getAgent(args[0]);if(!agent)throw new Error("agent not found");const plan=state.getPlanForAgent(agent.rootAgentId);output({plan,revisions:plan?state.listPlanRevisions(plan.id):[],tasks:plan?state.listPlanTasks(plan.id):[]});
+  }else if(command==="reviews"){
+    const agent=state.getAgent(args[0]);if(!agent)throw new Error("agent not found");const plan=state.getPlanForAgent(agent.rootAgentId);const tasks=plan?state.listPlanTasks(plan.id):[];output(tasks.flatMap(task=>state.listReviews(task.id)));
   }else if(command==="ps"){
     const agents=state.listAgents().filter(agent=>agent.id===agent.rootAgentId);output(agents,agents.map(agent=>`${agent.id}\t${agent.status}\t${agent.task}`).join("\n"));
   }else if(command==="agents"){

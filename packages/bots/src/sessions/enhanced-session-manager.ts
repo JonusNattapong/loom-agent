@@ -81,6 +81,9 @@ export class EnhancedBotSessionManager {
     return parts.join(":");
   }
 
+  /** Stable persistence hooks for runtime integrations. */
+  sessionKeyFor(event: BotEvent): string { return this.sessionKey(event); }
+  async saveSession(event: BotEvent, session: any): Promise<void> { await this.state.set(this.sessionKey(event), session); }
   /**
    * Find or create a session for an incoming event with full isolation
    */

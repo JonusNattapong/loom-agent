@@ -77,12 +77,12 @@ export class LeaseManager {
 }
 
 export class SequenceJournal<T=unknown> {
-  private next=1; private acknowledged=0; private pending=new Map<number,ProtocolEnvelope<T>>();
+  private next=1; private acknowledged=0; private received=0; private pending=new Map<number,ProtocolEnvelope<T>>();
   constructor(private readonly sender:WorkerIdentity) {}
   append(type:ProtocolType,payload:T, lease?:LeaseToken, id=`msg-${this.next}`) { const envelope=createEnvelope({type,id,sender:this.sender,sequence:this.next++,payload,lease}); this.pending.set(envelope.sequence,envelope); return envelope; }
   acknowledge(sequence:number){if(sequence>this.acknowledged)this.acknowledged=sequence; for(const n of this.pending.keys())if(n<=sequence)this.pending.delete(n);}
   replay(afterSequence=this.acknowledged){return [...this.pending.entries()].filter(([n])=>n>afterSequence).sort(([a],[b])=>a-b).map(([,e])=>e);}
-  receive(envelope:ProtocolEnvelope<T>){if(envelope.sequence>this.lastSequence+1)throw new Error("protocol sequence gap");return envelope.sequence<=this.acknowledged?"duplicate":"accepted";}
+  receive(envelope:ProtocolEnvelope<T>){if(envelope.sequence<=this.received)return "duplicate";if(envelope.sequence!==this.received+1)throw new Error("protocol sequence gap");this.received=envelope.sequence;return "accepted";}
   get lastSequence(){return this.next-1} get lastAcknowledged(){return this.acknowledged}
 }
 

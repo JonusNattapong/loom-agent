@@ -9,3 +9,7 @@ loom job inspect <id>
 loom job cancel <id>
 loom job retry <id>
 ```
+
+## Approval waiting
+
+Approval-gated execution becomes `waiting`, records `waitingReason=approval` and the durable approval reference, releases the execution lease, and does not consume a retry attempt. Approval resolution wakes the same job and root. Denial is terminal and is not treated as a provider retry.

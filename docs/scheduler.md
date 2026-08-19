@@ -13,3 +13,7 @@ loom schedule delete <id>
 ```
 
 The local implementation uses `run_once`-style bounded materialization; advanced catch-up/DST semantics remain future work.
+
+## Restart and misfires
+
+The default one-shot behavior is effectively `run_once`: an overdue schedule materializes one logical occurrence using the schedule ID and intended run time, then advances/disables the schedule. The occurrence/job transaction and process restart E2E prevent duplicate jobs. The bounded cron implementation persists timezone metadata but is not a full DST-aware calendar engine.

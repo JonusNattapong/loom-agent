@@ -12,9 +12,11 @@
   "dependencies": {
     "@loom/coordinator": "workspace:*",
     "@loom/core": "workspace:*",
-    "@loom/state": "workspace:*"
+    "@loom/state": "workspace:*",
+    "discord.js": "^14.0.0"
   },
   "devDependencies": {
-    "typescript": "^5.5.0"
+    "typescript": "^5.5.0",
+    "@types/discord.js": "^0.0.0"
   }
 }

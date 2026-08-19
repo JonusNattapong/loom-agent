@@ -1,31 +1,35 @@
 /**
  * Base Transport Implementation
  * 
- * Base class for transport implementations that provides
- * common functionality like event normalization and lifecycle.
+ * Base class providing common functionality for transport implementations.
+ * Subclasses must implement the abstract methods.
  */
 import { BotTransport, BotEvent, BotEventType, BotAttachment, OutboundBotMessage } from "./types";
 
 export abstract class BaseTransport {
-  readonly _type!: string;
+  readonly type: string;
 
-  get type(): string {
-    return this._type;
-  }
+  constructor(readonly type: string) {}
 
+  /** Start the transport connection (must be implemented by subclass) */
   abstract start(): Promise<void>;
 
+  /** Stop the transport connection (must be implemented by subclass) */
   abstract stop(): Promise<void>;
 
+  /** Send an outbound message through the transport (must be implemented by subclass) */
   abstract send(message: OutboundBotMessage): Promise<void>;
 
   /**
-   * Normalize platform-specific event into a BotEvent
+   * Normalize a platform-specific incoming event into a standardized BotEvent.
+   * Subclasses must implement this to convert platform events
+   * into the common BotEvent format.
    */
   abstract normalizeEvent(event: any): BotEvent;
 
   /**
-   * Create a bot event from a platform message
+   * Create a BotEvent from a platform message.
+   * Default implementation that can be overridden by subclasses.
    */
   createEvent(message: any, botId: string): BotEvent {
     return {

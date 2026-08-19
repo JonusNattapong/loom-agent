@@ -1,3 +1,14 @@
 import {describe,it,expect} from "vitest";
 import {runEvalHarness} from "./index.js";
-describe("V0.3 eval harness",()=>{it("passes all fixed scenarios",async()=>{const results=await runEvalHarness();expect(results.map(r=>r.name)).toEqual(["fix failing tests","create file","modify multiple files","crash + resume","failed verification","denied tool call"]);expect(results.every(r=>r.passed),JSON.stringify(results)).toBe(true);});});
+
+describe("V0.4 eval harness",()=>{
+  it("passes the V0.3 regression and V0.4 multi-agent scenarios",async()=>{
+    const results=await runEvalHarness();
+    expect(results.map(result=>result.name)).toEqual([
+      "fix failing tests","create file","modify multiple files","crash + resume","failed verification","denied tool call",
+      "v0.4 parent to coder","v0.4 researcher to coder handoff","v0.4 coder reviewer repair","v0.4 bounded parallel tasks",
+      "v0.4 child crash resume","v0.4 parent crash before consume","v0.4 cancellation hierarchy","v0.4 child approval resume",
+    ]);
+    expect(results.every(result=>result.passed),JSON.stringify(results)).toBe(true);
+  });
+});

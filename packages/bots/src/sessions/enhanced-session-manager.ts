@@ -124,7 +124,7 @@ export class EnhancedBotSessionManager {
   /**
    * Check if a user is authorized for a given operation
    */
-  isAuthorized(userId: string, action: "command" | "approval" | "reset": string): boolean {
+  isAuthorized(userId: string, action: "command" | "approval" | "reset"): boolean {
     const { authorization } = this.rules;
 
     // Admins are always authorized

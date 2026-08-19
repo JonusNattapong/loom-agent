@@ -1,0 +1,1 @@
+{"name":"@loom/runtime","version":"0.1.0","type":"module","main":"dist/index.js","types":"dist/index.d.ts","dependencies":{"@loom/core":"0.1.0","@loom/providers":"0.1.0","@loom/state":"0.1.0","@loom/tools":"0.1.0"}}

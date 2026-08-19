@@ -13,12 +13,14 @@
     },
     "packages/cli": {
       "name": "@loom/cli",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "bin": {
         "loom": "dist/index.js",
       },
       "dependencies": {
+        "@loom/core": "0.1.0",
         "@loom/mcp": "0.1.0",
+        "@loom/planner": "0.3.0",
         "@loom/providers": "0.1.0",
         "@loom/runtime": "0.2.0",
         "@loom/skills": "0.1.0",
@@ -37,11 +39,28 @@
       "name": "@loom/core",
       "version": "0.1.0",
     },
+    "packages/evals": {
+      "name": "@loom/evals",
+      "version": "0.3.0",
+      "dependencies": {
+        "@loom/planner": "0.3.0",
+        "@loom/state": "0.1.0",
+        "@loom/tools": "0.1.0",
+      },
+    },
     "packages/mcp": {
       "name": "@loom/mcp",
       "version": "0.1.0",
       "dependencies": {
         "@loom/core": "0.1.0",
+      },
+    },
+    "packages/planner": {
+      "name": "@loom/planner",
+      "version": "0.3.0",
+      "dependencies": {
+        "@loom/core": "0.1.0",
+        "@loom/state": "0.1.0",
       },
     },
     "packages/providers": {
@@ -82,6 +101,9 @@
       "version": "0.1.0",
       "dependencies": {
         "@loom/core": "0.1.0",
+      },
+      "devDependencies": {
+        "@loom/state": "0.1.0",
       },
     },
   },
@@ -146,7 +168,11 @@
 
     "@loom/core": ["@loom/core@workspace:packages/core"],
 
+    "@loom/evals": ["@loom/evals@workspace:packages/evals"],
+
     "@loom/mcp": ["@loom/mcp@workspace:packages/mcp"],
+
+    "@loom/planner": ["@loom/planner@workspace:packages/planner"],
 
     "@loom/providers": ["@loom/providers@workspace:packages/providers"],
 

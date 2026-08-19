@@ -38,7 +38,7 @@ export function validateEnvelope(value: unknown): ProtocolEnvelope {
   const v=value as Partial<ProtocolEnvelope>;
   if(v.protocol!==PROTOCOL_VERSION) throw new ProtocolValidationError("unsupported_version",`unsupported protocol version: ${String(v.protocol)}`);
   if(typeof v.id!=="string" || !v.id) throw new ProtocolValidationError("invalid_message_id","message id is required");
-  if(typeof v.type!=="string" || !((['register','heartbeat','dispatch','accepted','started','renew','ack','result','error','disconnect'] as string[]).includes(v.type)) throw new ProtocolValidationError("invalid_message_type","message type is invalid");
+  if(typeof v.type!=="string" || !((["register","heartbeat","dispatch","accepted","started","renew","ack","result","error","disconnect"] as string[]).includes(v.type))) throw new ProtocolValidationError("invalid_message_type","message type is invalid");
   if(!Number.isSafeInteger(v.sequence) || (v.sequence as number)<1) throw new ProtocolValidationError("invalid_sequence","sequence must be a positive safe integer");
   if(typeof v.sentAt!=="string" || !v.sender || typeof v.sender.workerId!=="string" || typeof v.sender.instanceId!=="string") throw new ProtocolValidationError("invalid_sender","sender identity is invalid");
   return v as ProtocolEnvelope;

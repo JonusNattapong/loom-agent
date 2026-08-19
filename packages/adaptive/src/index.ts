@@ -55,7 +55,7 @@ export class MultiRoundExecutor {
 }
 
 export interface ReviewIssue {code:string;message:string;severity:"low"|"medium"|"high";repair?:string}
-export interface ReviewResult {verdict:"accept"|"reject"|"needs_human";summary:string;issues:ReviewIssue[];round:number}
+export interface ReviewResult {verdict:"accept"|"reject"|"needs_human";summary:string;issues:ReviewIssue[];suggestedRepairs?:unknown[];round:number}
 export interface ReviewInput {goal:string;task:PlannedTask;artifacts?:string[];diff?:string;testResults?:string[];agentResult:string}
 export interface ReviewerOptions {maxRepairRounds?:number;provider?:Provider}
 export class SemanticReviewer {constructor(private readonly options:ReviewerOptions={}){}
@@ -67,14 +67,14 @@ export interface TestSelectionInput {changedFiles:string[];knownTestFiles:string
 export interface TestSelection {level:"targeted"|"package"|"full";files:string[];reason:string}
 export function selectTests(input:TestSelectionInput):TestSelection {const files=input.knownTestFiles.filter(t=>input.changedFiles.some(f=>{const base=f.replace(/\.(ts|tsx|js|jsx)$/,""),test=t.replace(/\.(test|spec)?\.(ts|tsx|js|jsx)$/g,"");return test.includes(base)||base.includes(test)}));return {level:files.length?"targeted":"full",files,reason:files.length?"matched changed paths to test paths":"no deterministic test match"};}
 
-export interface AdaptiveOrchestratorOptions extends PlannerOptions { maxModelRounds?:number; maxToolCalls?:number; tool?: (call:ToolCall, agentId:string, taskId:string)=>Promise<string>; }
+export interface AdaptiveOrchestratorOptions extends PlannerOptions { maxModelRounds?:number; maxToolCalls?:number; maxRepairRounds?:number; afterExecutionCheckpoint?:()=>void|Promise<void>; tool?: (call:ToolCall, agentId:string, taskId:string)=>Promise<string>; reviewer?: (input:ReviewInput,round:number)=>Promise<ReviewResult>; }
 export class AdaptiveOrchestrator {
  constructor(private readonly state:StateStore,private readonly provider:Provider,private readonly options:AdaptiveOrchestratorOptions={}){}
  async run(agentId:string,goal:string){
   let plan=this.state.getPlanForAgent(agentId);
   if(!plan){
    const input:PlanningInput={goal,availableRoles:["planner","researcher","coder","tester","reviewer","general"]};
-   const proposal=await new ModelAdaptivePlanner(this.options).plan(input); plan=this.state.createPlan(agentId,goal);
+   const proposal=await new ModelAdaptivePlanner({...this.options,provider:this.provider}).plan(input); plan=this.state.createPlan(agentId,goal);
    this.state.recordPlanRevision({planId:plan.id,rootAgentId:agentId,version:1,proposal,status:proposal.source});
    const ids=new Map(proposal.tasks.map(t=>[t.id,`task_${plan!.id}_${t.id}`]));
    proposal.tasks.forEach((t,position)=>this.state.addPlanTask({id:ids.get(t.id),planId:plan!.id,title:t.title,kind:t.verification?.length?"verify":"execute",dependencies:t.dependencies.map(d=>ids.get(d)!).filter(Boolean),maxRetries:2,position}));
@@ -82,13 +82,16 @@ export class AdaptiveOrchestrator {
   } else if (plan && this.state.listPlanTasks(plan.id).length===0) {
    const revision=this.state.listPlanRevisions(plan.id).at(-1); if(revision){const recovered= (typeof revision.proposal==="string"?JSON.parse(revision.proposal):revision.proposal) as PlanProposal;const ids=new Map<string,string>(recovered.tasks.map((t:PlannedTask)=>[t.id,`task_${plan!.id}_${t.id}`]));recovered.tasks.forEach((t:PlannedTask,position:number)=>this.state.addPlanTask({id:ids.get(t.id),planId:plan!.id,title:t.title,kind:t.verification?.length?"verify":"execute",dependencies:t.dependencies.map((d:string)=>ids.get(d)!).filter((d):d is string=>Boolean(d)),maxRetries:2,position}));this.state.addTrace(agentId,"planner.recovered",{planId:plan.id,planVersion:revision.version});}
   }
+  // A process may die after a tool checkpoint but before the task status commit.
+  // Requeue only in-flight work; tool middleware remains the idempotency authority.
+  for(const task of this.state.listPlanTasks(plan.id)) if(task.status==="running") this.state.updatePlanTask(task.id,"ready",{blockedReason:"recovered after process restart"});
   const executor={execute:async (task:PlanTask,ctx:{agentId:string;goal:string})=>{
    const roundsBefore=this.state.listExecutionRounds(task.id).length;
-   const result=await new MultiRoundExecutor(this.provider,{tool:call=>this.options.tool?this.options.tool(call,ctx.agentId,task.id):Promise.resolve("tool execution unavailable"),checkpoint:async snapshot=>{this.state.recordExecutionRound({rootAgentId:ctx.agentId,taskId:task.id,round:roundsBefore+snapshot.round,status:"checkpointed",messages:snapshot.messages});},trace:(type,data)=>this.state.addTrace(ctx.agentId,type,{...data,taskId:task.id})},{maxModelRounds:this.options.maxModelRounds,maxToolCalls:this.options.maxToolCalls}).run({taskId:task.id,goal:ctx.goal,messages:[{role:"user",content:task.title+"\n"+ctx.goal}]});
+   const result=await new MultiRoundExecutor(this.provider,{tool:call=>this.options.tool?this.options.tool(call,ctx.agentId,task.id):Promise.resolve("tool execution unavailable"),checkpoint:async snapshot=>{this.state.recordExecutionRound({rootAgentId:ctx.agentId,taskId:task.id,round:roundsBefore+snapshot.round,status:"checkpointed",messages:snapshot.messages});await this.options.afterExecutionCheckpoint?.();},trace:(type,data)=>this.state.addTrace(ctx.agentId,type,{...data,taskId:task.id})},{maxModelRounds:this.options.maxModelRounds,maxToolCalls:this.options.maxToolCalls}).run({taskId:task.id,goal:ctx.goal,messages:[{role:"user",content:task.title+"\n"+ctx.goal}]});
    if(result.status!=="completed")throw Object.assign(new Error(result.summary),{failurePolicy:"needs_human"});
    return {result:result.summary};
   }};
-  const reviewer={verify:async(task:PlanTask,ctx:{agentId:string;goal:string;tasks:PlanTask[]})=>{const result=await new SemanticReviewer().review({goal:ctx.goal,task:{id:task.id,title:task.title,description:task.title,dependencies:task.dependencies},agentResult:task.result??"completed",testResults:["runtime checkpoint"]});this.state.recordReview({rootAgentId:ctx.agentId,taskId:task.id,round:this.state.listReviews(task.id).length+1,verdict:result.verdict,summary:result.summary,issues:result.issues});return {passed:result.verdict==="accept",summary:result.summary,failurePolicy:result.verdict==="needs_human"?"needs_human":"retryable" as any};}};
+  const reviewer={verify:async(task:PlanTask,ctx:{agentId:string;goal:string;tasks:PlanTask[]})=>{const round=this.state.listReviews(task.id).length+1;const input:ReviewInput={goal:ctx.goal,task:{id:task.id,title:task.title,description:task.title,dependencies:task.dependencies},agentResult:task.result??"completed",testResults:["runtime checkpoint"]};const result=await (this.options.reviewer?this.options.reviewer(input,round):new SemanticReviewer().review(input,round));this.state.recordReview({rootAgentId:ctx.agentId,taskId:task.id,round,verdict:result.verdict,summary:result.summary,issues:result.issues});if(result.verdict==="reject"){if(round>=(this.options.maxRepairRounds??3)){return {passed:false,summary:"repair limit reached: "+result.summary,failurePolicy:"needs_human" as const};}this.state.recordRepair({rootAgentId:ctx.agentId,taskId:task.id,round,reviewId:`${task.id}:review${round}`,status:"created",instruction:result.suggestedRepairs??result.issues});}return {passed:result.verdict==="accept",summary:result.summary,failurePolicy:result.verdict==="needs_human"?"needs_human":"retryable" as any};}};
   return new VerifiedExecutionRuntime(this.state,executor,reviewer).resume(agentId);
  }
 }

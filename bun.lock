@@ -13,11 +13,12 @@
     },
     "packages/cli": {
       "name": "@loom/cli",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "bin": {
         "loom": "dist/index.js",
       },
       "dependencies": {
+        "@loom/coordinator": "0.4.0",
         "@loom/core": "0.1.0",
         "@loom/mcp": "0.1.0",
         "@loom/planner": "0.3.0",
@@ -35,14 +36,26 @@
         "@loom/core": "0.1.0",
       },
     },
+    "packages/coordinator": {
+      "name": "@loom/coordinator",
+      "version": "0.4.0",
+      "dependencies": {
+        "@loom/context": "0.1.0",
+        "@loom/core": "0.1.0",
+        "@loom/planner": "0.3.0",
+        "@loom/state": "0.1.0",
+      },
+    },
     "packages/core": {
       "name": "@loom/core",
       "version": "0.1.0",
     },
     "packages/evals": {
       "name": "@loom/evals",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
+        "@loom/coordinator": "0.4.0",
+        "@loom/core": "0.1.0",
         "@loom/planner": "0.3.0",
         "@loom/state": "0.1.0",
         "@loom/tools": "0.1.0",
@@ -165,6 +178,8 @@
     "@loom/cli": ["@loom/cli@workspace:packages/cli"],
 
     "@loom/context": ["@loom/context@workspace:packages/context"],
+
+    "@loom/coordinator": ["@loom/coordinator@workspace:packages/coordinator"],
 
     "@loom/core": ["@loom/core@workspace:packages/core"],
 

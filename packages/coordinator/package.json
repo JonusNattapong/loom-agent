@@ -1,0 +1,1 @@
+{"name":"@loom/coordinator","version":"0.4.0","type":"module","main":"dist/index.js","types":"dist/index.d.ts","dependencies":{"@loom/context":"0.1.0","@loom/core":"0.1.0","@loom/planner":"0.3.0","@loom/state":"0.1.0"}}

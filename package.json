@@ -1,9 +1,9 @@
 {
   "name": "loom",
   "private": true,
-  "version": "0.3.0",
-  "description": "A durable single-agent harness with task graphs and verified execution.",
+  "version": "0.4.0",
+  "description": "A local durable multi-agent harness with task graphs and verified execution.",
   "workspaces": ["packages/*"],
-  "scripts": {"build":"tsc -b packages/core packages/state packages/providers packages/tools packages/context packages/skills packages/mcp packages/planner packages/runtime packages/evals packages/cli","test":"vitest run","test:watch":"vitest","eval":"tsx packages/evals/src/cli.ts","loom":"tsx packages/cli/src/index.ts"},
+  "scripts": {"build":"tsc -b packages/core packages/state packages/providers packages/tools packages/context packages/skills packages/mcp packages/planner packages/coordinator packages/runtime packages/evals packages/cli","test":"vitest run","test:watch":"vitest","eval":"tsx packages/evals/src/cli.ts","loom":"tsx packages/cli/src/index.ts"},
   "devDependencies": {"@types/node":"^22.10.2","tsx":"^4.19.2","typescript":"^5.7.2","vitest":"^2.1.8"}
 }

@@ -1,0 +1,1 @@
+{"extends":"../../tsconfig.base.json","compilerOptions":{"rootDir":"src","outDir":"dist"},"references":[{"path":"../core"},{"path":"../state"},{"path":"../context"},{"path":"../planner"}],"include":["src/**/*.ts"]}

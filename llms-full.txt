@@ -1,0 +1,216 @@
+# Loom Agent V0.3 — Full Agent Context
+
+> Use this file to orient a coding agent before modifying Loom. It consolidates the current architecture, commands, contracts, invariants, and limitations. Source code and tests remain authoritative.
+
+## Project purpose
+
+Loom is a CLI-first durable harness for one developer agent. V0.3 focuses on completing measurable work through a persisted task graph and reviewer-gated verification. Do not add multi-agent orchestration, swarm behavior, web/desktop UI, a scheduler, daemon, distributed state, vector memory, or embeddings in this milestone.
+
+## Runtime requirements
+
+- Node.js 22+ for the built-in SQLite runtime.
+- Bun 1.x for workspace installation and development commands.
+- Git for repository inspection and diff checks.
+
+Primary commands:
+
+```bash
+bun install
+npm run build
+bun x vitest run --config vitest.config.ts
+npm run eval
+npm run loom -- run "fix all failing tests"
+```
+
+## Repository packages
+
+- `@loom/core`: shared data and interface contracts.
+- `@loom/state`: SQLite runtime, migrations, and durable queries.
+- `@loom/planner`: plan templates, dependency scheduling, execute/verify phases, retry and recovery.
+- `@loom/tools`: normalized tools, permission/approval middleware, idempotency ledger, native tools.
+- `@loom/providers`: deterministic mock and OpenAI-compatible adapters.
+- `@loom/mcp`: basic line-delimited stdio MCP adapter.
+- `@loom/context`: priority-based character-budget compiler used by the compatibility runtime.
+- `@loom/skills`: `.loom/skills/*/SKILL.md` discovery and parsing.
+- `@loom/runtime`: V0.2-compatible `AgentLoop`.
+- `@loom/evals`: stable deterministic orchestration scenarios.
+- `@loom/cli`: configuration, dependency wiring, commands, and output.
+
+Dependency direction should flow from CLI to concrete packages, planner to state/core, and state to core. Keep CLI code out of reusable packages.
+
+## V0.3 execution model
+
+`loom run <goal>` creates an agent and calls `PlanEngine.create`. Coding goals matching `fix|test|bug|code|parser` receive:
+
+```text
+Inspect repository
+-> Run tests
+-> Diagnose failures
+-> Fix implementation
+-> Run targeted tests
+-> Run full suite
+-> Review diff
+```
+
+Other goals receive `Inspect goal -> Execute goal -> Verify result`.
+
+`TaskGraphRuntime.runnable` makes a pending task ready only when all dependencies completed. Failed or blocked dependencies block downstream tasks. `VerifiedExecutionRuntime` executes ready tasks and uses a separate `Reviewer` for verification tasks.
+
+Reviewer rejection reopens the direct dependency while retry budget remains, puts verification back to pending, creates a checkpoint, and traces `verification.rejected`. The plan becomes completed only when every task is completed.
+
+## Lifecycle types
+
+Agent statuses:
+
+```text
+created running waiting paused recovering completed failed stopped
+```
+
+Task statuses:
+
+```text
+pending ready running waiting blocked completed failed needs_approval
+```
+
+Phases:
+
+```text
+plan execute verify
+```
+
+Failure policies:
+
+```text
+retryable non_retryable blocked needs_approval needs_human
+```
+
+`retryable` returns a task to ready within its budget. `needs_approval` moves task to `needs_approval` and agent/plan to waiting. `deny` fails without replay. `needs_human` blocks automated progress.
+
+## Persistence
+
+Default database: `.loom/loom.db`. Override with `LOOM_DB`.
+
+Migrations:
+
+1. `agents`, `traces`, `checkpoints`
+2. `working_memory`, `tool_execution_ledger`
+3. `plans`, `plan_tasks`, `approval_requests`, `artifacts`
+4. `task_checkpoints`
+
+Task checkpoints have `cp_...` ids and store agent, plan, task, phase, step, JSON snapshot, and timestamp. Artifacts link to agent, task, and checkpoint. Existing databases are upgraded with append-only migration records.
+
+Never rewrite an applied migration. Add a new numbered migration and regression coverage.
+
+## Recovery and idempotency
+
+`loom resume <agent-id>` reloads the newest plan. Completed tasks are not rerun. Approved tasks return to ready. Denied tasks fail without execution.
+
+Tool calls with ids are recorded before execution. A succeeded result is reused. An `executing` or `unknown` state is not replayed automatically because side effects may already have happened.
+
+`--max-tasks <n>` is a deterministic pause mechanism for testing recovery; it is not an operating-system crash injector.
+
+## Tools and approvals
+
+Native tools are `read_file`, `write_file`, and `shell`. All normalized provider and MCP calls go through `ToolExecutor`.
+
+Permission values:
+
+- `allow`: execute.
+- `deny`: fail non-retryably.
+- `ask`: create a durable request and throw `ApprovalRequiredError`.
+
+Approval commands:
+
+```bash
+loom approvals [agent-id]
+loom approve <request-id>
+loom deny <request-id>
+loom resume <agent-id>
+```
+
+Native paths are resolved against the workspace and checked after real-path resolution for reads and parent resolution for writes. Shell uses an explicit working directory, timeout, capture limit, and reports exit/duration. It still runs through an OS shell and is not sandboxed.
+
+## Providers
+
+The default `MockProvider` is deterministic and does not repair real code. Set `LOOM_PROVIDER=openai` and `OPENAI_API_KEY` for the real adapter. `LOOM_MODEL` overrides the config model. `OPENAI_BASE_URL` selects another compatible endpoint.
+
+The OpenAI-compatible adapter uses Chat Completions, is non-streaming, and normalizes output/tool calls/usage/finish reason/request id/model. V0.3 supports one tool round followed by one final provider call.
+
+Normal tests must not require credentials or network access.
+
+## Configuration
+
+Project config is `.loom/config.json`; start with `.loom/config.example.json`. Environment overrides project config for provider/model. There are no `--provider` or `--model` flags.
+
+Supported fields:
+
+```json
+{
+  "provider": "mock",
+  "model": "gpt-4o-mini",
+  "context": {"maxChars": 50000},
+  "permissions": {"read_file": "allow", "write_file": "ask", "shell": "ask"},
+  "mcpServers": {}
+}
+```
+
+`context.maxChars` applies to the compatibility `AgentLoop`, not V0.3 graph task prompts.
+
+## CLI
+
+Commands: `run`, `ps`, `inspect`, `resume`, `trace`, `approvals`, `approve`, `deny`, `skills`, `skills show`, `tools`, `memory`, `memory set`, `memory delete`, and `config`.
+
+Global parsed options: `--json`, `--max-tasks`, and `--skill`. V0.3 parses `--skill` but does not yet inject it into graph execution.
+
+Inspect must expose goal/status/phase, ordered tasks, current task, latest checkpoint, and artifacts. JSON output also includes approvals and durable records.
+
+## Skills and context
+
+Skills live in `.loom/skills/<name>/SKILL.md` with simple frontmatter: `name`, `description`, and inline comma-separated `tools`. V0.3 graph execution discovers skills but does not enforce selected skill instructions/tool lists. Do not claim otherwise.
+
+The `ContextCompiler` priority order is system, goal, runtime, skills, memory, tools, recovery, messages, and files. It truncates lower-priority content under a character budget and preserves required goal/tool sources where possible. This path belongs to the V0.2-compatible runtime.
+
+## MCP
+
+MCP config defines command, args, and env. Loom spawns stdio servers, initializes, lists tools, and adapts `tools/call` results. Failures do not remove native tools.
+
+V0.3 lacks HTTP/SSE transports, request timeout, reconnection, cancellation, and a full lifecycle manager. MCP processes inherit Loom environment and are not sandboxed.
+
+## Tracing
+
+Key graph events: `agent.created`, `plan.created`, `task.started`, `task.completed`, `task.retrying`, `verification.passed`, `verification.rejected`, `checkpoint.created`, `agent.paused`, `agent.recovering`, `plan.completed`, `approval.approved`, `approval.denied`.
+
+Trace payloads are not automatically secret-redacted.
+
+## Evaluation
+
+`npm run eval` runs six stable scenarios: failing-test repair, file creation, multi-file modification, crash/resume, failed verification, and denied tool call. They use in-memory SQLite and deterministic test doubles. They test orchestration invariants, not model quality or genuine repository repair.
+
+## Required checks
+
+Before review:
+
+```bash
+npm run build
+bun x vitest run --config vitest.config.ts
+npm run eval
+git diff --check
+```
+
+Also manually verify `run --max-tasks`, `inspect`, `resume`, and an `ask -> approve/deny -> resume` flow when those areas change.
+
+## Known limitations
+
+- Rule-based plan templates.
+- Targeted verification currently runs the full Vitest suite.
+- Diff review is `git diff --check` plus `git diff --stat`, not semantic review.
+- One provider tool round, no streaming.
+- Skills not injected/enforced in graph execution.
+- Basic stdio-only MCP.
+- Local unsigned approvals.
+- Synchronous, single-process SQLite.
+- Partial artifact discovery rather than complete filesystem-diff derivation.
+- Deterministic evals are not intelligence benchmarks.
+- No sandbox or general secret redaction.
+
+Do not begin multi-agent work until planning, recovery, verification, approvals, and real-world eval coverage are stronger.

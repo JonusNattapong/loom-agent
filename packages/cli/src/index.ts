@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import {promises as fs} from "node:fs";
+import {randomBytes} from "node:crypto";
 import {join} from "node:path";
 import type {Agent,AgentResult,PermissionLevel,Provider} from "@loom/core";
 import {MultiAgentRuntime} from "@loom/coordinator";
@@ -12,6 +13,7 @@ import {McpClient,mcpTools} from "@loom/mcp";
 import {PlanEngine,Reviewer,TaskExecutor,VerifiedExecutionRuntime} from "@loom/planner";
 import {AdaptiveOrchestrator} from "@loom/adaptive";
 import {Daemon,nextScheduleAt} from "@loom/daemon";
+import {RemoteWorkerRuntime,loadOrCreateWorkerId,RemoteControllerService,hashWorkerToken} from "@loom/remote";
 
 type Config={
   provider?:string;model?:string;context?:{maxChars?:number};permissions?:Record<string,PermissionLevel>;
@@ -22,6 +24,8 @@ type Config={
   verification?:{targetedTests?:boolean;final?:"targeted"|"package"|"full"};
   daemon?:{maxConcurrentJobs?:number;heartbeatIntervalMs?:number;staleAfterMs?:number;shutdownGraceMs?:number};jobs?:{leaseMs?:number;renewEveryMs?:number;maxAttempts?:number};scheduler?:{enabled?:boolean;maxSleepMs?:number};
   mcpServers?:Record<string,{command:string;args?:string[];env?:Record<string,string>}>;
+  worker?:{id?:string;controller?:string;tokenEnv?:string;capabilities?:string[];stateFile?:string};
+  remote?:{enabled?:boolean;listen?:{host?:string;port?:number;path?:string};tokenEnv?:string;workerId?:string;trust?:"untrusted"|"trusted"|"approved";maxMessageBytes?:number;authTimeoutMs?:number};
 };
 
 async function loadConfig():Promise<Config>{try{return JSON.parse(await fs.readFile(join(process.cwd(),".loom","config.json"),"utf8"));}catch{return {};}}
@@ -35,7 +39,7 @@ const args=argv.slice(1).filter(value=>!skipped.has(value));const state=new Stat
 async function loadTools(){for(const [name,server] of Object.entries(cfg.mcpServers??{})){try{const client=await new McpClient(server,(type,data)=>console.error(`[${type}]`,data)).connect();for(const tool of mcpTools(client))registry.register(tool);}catch(error){console.error(`MCP server ${name} unavailable: ${error instanceof Error?error.message:error}`);}}return registry;}
 function loadProvider():Provider{const name=process.env.LOOM_PROVIDER??cfg.provider??"mock";if(name==="openai")return new OpenAICompatibleProvider(undefined,process.env.LOOM_MODEL??cfg.model);return new MockProvider();}
 function output(value:unknown,human?:string){console.log(json?JSON.stringify(value,null,2):human??(typeof value==="string"?value:JSON.stringify(value,null,2)));}
-function usage(){console.log("loom run <goal> [--max-agents N] | daemon start|stop|status | jobs | job enqueue|inspect|cancel|retry <id> | schedules | schedule add|pause|resume|delete <id> | plan <id> | reviews <id> | ps | inspect <id> | resume <id> | trace <id> | agents | agent inspect|cancel <id> | delegations <id> | messages <id> | approve|deny <request-id>");}
+function usage(){console.log("loom worker start --controller URL --token-env ENV [--id ID] | loom run <goal> [--max-agents N] | daemon start|stop|status | jobs | job enqueue|inspect|cancel|retry <id> | schedules | schedule add|pause|resume|delete <id> | plan <id> | reviews <id> | ps | inspect <id> | resume <id> | trace <id> | agents | agent inspect|cancel <id> | delegations <id> | messages <id> | approve|deny <request-id>");}
 
 function scopedPermissions(tools:ToolRegistry,allowedTools?:string[]):Record<string,PermissionLevel>{
   const permissions={...(cfg.permissions??{})};
@@ -87,10 +91,18 @@ function inspectHuman(agentId:string){
 }
 
 try{
-  if(command==="run"){
+  if(command==="worker"&&args[0]==="token"&&args[1]==="create"){const token=randomBytes(32).toString("base64url");output({token,tokenHash:hashWorkerToken(token)},"Token (store securely; shown once): "+token);}
+  else if(command==="worker"&&args[0]==="start"){
+    const value=(name:string)=>{const i=argv.indexOf(name);return i>=0?argv[i+1]:undefined;};
+    const controller=value("--controller")??cfg.worker?.controller;if(!controller)throw new Error("worker controller is required");
+    const tokenEnv=value("--token-env")??cfg.worker?.tokenEnv??"LOOM_WORKER_TOKEN";const token=process.env[tokenEnv];if(!token)throw new Error(`worker token environment variable is missing: ${tokenEnv}`);
+    const workerId=value("--id")??cfg.worker?.id??loadOrCreateWorkerId(cfg.worker?.stateFile??join(process.cwd(),".loom","worker.json"));
+    const runtime=new RemoteWorkerRuntime({url:controller,token,workerId,capabilities:cfg.worker?.capabilities??[],stateFile:cfg.worker?.stateFile});
+    const stop=()=>{void runtime.stop().finally(()=>process.exit(0));};process.once("SIGINT",stop);process.once("SIGTERM",stop);await runtime.start();output(runtime.status(),`Worker ${workerId} connected to ${controller}`);await new Promise<void>(()=>{});
+  }else if(command==="run"){
     const goal=args.join(" ");if(!goal)throw new Error("goal is required");const agent=state.createAgentRecord({goal,role:"planner"});state.addTrace(agent.id,"agent.created",{goal});const provider=loadProvider();const tools=await loadTools();const toolExecutor=new ToolExecutor(tools,{permissions:scopedPermissions(tools),ledger:state,approvals:state,artifacts:state,trace:(type,data)=>state.addTrace(agent.id,type,data)});const adaptive=new AdaptiveOrchestrator(state,provider,{maxModelRounds:12,maxToolCalls:30,provider,tool:(call,agentId,taskId)=>toolExecutor.execute(call.name,call.input,{agentId,taskId,toolCallId:call.id??`${taskId}:${call.name}`})});const result=await adaptive.run(agent.id,goal);const plan=state.getPlanForAgent(agent.id);output({agent:state.getAgent(agent.id),plan:result,tasks:plan?state.listPlanTasks(plan.id):[],agents:agentTree(agent.id),delegations:state.listDelegations(agent.id)},`Agent: ${agent.id}\nPlan: ${plan?.id??"none"}\nStatus: ${result.status}`);
   }else if(command==="daemon"&&args[0]==="start"){
-    const daemon=new Daemon(state,{provider:loadProvider(),maxConcurrentJobs:cfg.daemon?.maxConcurrentJobs,heartbeatIntervalMs:cfg.daemon?.heartbeatIntervalMs,staleAfterMs:cfg.daemon?.staleAfterMs,leaseMs:cfg.jobs?.leaseMs,pollMs:1000});await daemon.start();output(await daemon.status(),`Daemon ${daemon.daemonId} running`);const shutdown=async()=>{await daemon.stop();process.exit(0);};process.once("SIGINT",shutdown);process.once("SIGTERM",shutdown);await new Promise<void>(()=>{});
+    const remote=cfg.remote?.enabled?new RemoteControllerService(state,{host:cfg.remote.listen?.host??"127.0.0.1",port:cfg.remote.listen?.port??4778,path:cfg.remote.listen?.path??"/v1/workers/connect",maxMessageBytes:cfg.remote.maxMessageBytes,authTimeoutMs:cfg.remote.authTimeoutMs,credentials:(process.env[cfg.remote.tokenEnv??"LOOM_WORKER_TOKEN"]?[{workerId:cfg.remote.workerId,tokenHash:hashWorkerToken(process.env[cfg.remote.tokenEnv??"LOOM_WORKER_TOKEN"]!),trust:cfg.remote.trust??"untrusted"}]:[])}):undefined;await remote?.start();const daemon=new Daemon(state,{provider:loadProvider(),maxConcurrentJobs:cfg.daemon?.maxConcurrentJobs,heartbeatIntervalMs:cfg.daemon?.heartbeatIntervalMs,staleAfterMs:cfg.daemon?.staleAfterMs,leaseMs:cfg.jobs?.leaseMs,pollMs:1000});await daemon.start();output(await daemon.status(),`Daemon ${daemon.daemonId} running`);const shutdown=async()=>{await daemon.stop();await remote?.stop();process.exit(0);};process.once("SIGINT",shutdown);process.once("SIGTERM",shutdown);await new Promise<void>(()=>{});
   }else if(command==="daemon"&&args[0]==="status"){
     const daemons=state.listDaemons();const active=daemons.find(d=>d.status==="running"&&d.heartbeatAt>Date.now()-(cfg.daemon?.staleAfterMs??20000));const jobs=state.listJobs();output({running:Boolean(active),daemon:active,jobs,schedules:state.listSchedules()});
   }else if(command==="daemon"&&args[0]==="stop"){

@@ -1,0 +1,1 @@
+{"name":"@loom/cli","version":"0.1.0","type":"module","bin":{"loom":"dist/index.js"},"main":"dist/index.js","dependencies":{"@loom/providers":"0.1.0","@loom/runtime":"0.1.0","@loom/state":"0.1.0","@loom/tools":"0.1.0"}}

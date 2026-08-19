@@ -1,0 +1,9 @@
+{
+  "name": "loom",
+  "private": true,
+  "version": "0.1.0",
+  "description": "A small durable agent harness.",
+  "workspaces": ["packages/*"],
+  "scripts": {"build":"tsc -b packages/core packages/state packages/providers packages/tools packages/runtime packages/cli","test":"vitest run","test:watch":"vitest","loom":"tsx packages/cli/src/index.ts"},
+  "devDependencies": {"@types/node":"^22.10.2","tsx":"^4.19.2","typescript":"^5.7.2","vitest":"^2.1.8"}
+}

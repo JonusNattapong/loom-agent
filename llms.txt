@@ -1,6 +1,6 @@
 # Loom Agent
 
-> Loom Agent V0.3 is a TypeScript, CLI-first, durable single-agent developer harness with persisted task graphs, verified execution, approvals, checkpoints, artifacts, SQLite recovery, tools, providers, skills, and MCP integration.
+> Loom Agent V0.4 is a TypeScript, CLI-first, local durable multi-agent runtime with persisted task graphs, parent-child delegation, task leases, an internal A2A bus, isolated context and memory, result handoff, approvals, verified execution, and SQLite recovery.
 
 ## Setup
 
@@ -9,24 +9,28 @@
 - [Development guide](docs/development.md)
 - [Configuration](docs/configuration.md)
 
-## Core concepts
+## Multi-agent concepts
 
 - [Architecture](docs/architecture.md)
+- [Local multi-agent runtime](docs/multi-agent.md)
+- [Delegation, leasing, and result handoff](docs/delegation.md)
+- [Local A2A message bus](docs/a2a.md)
+- [Multi-agent recovery and cancellation](docs/multi-agent-recovery.md)
 - [Task graph and verified execution](docs/task-graph.md)
-- [State, schema, and recovery](docs/state-and-recovery.md)
-- [Security model](docs/security.md)
-- [Known limitations](docs/limitations.md)
 
 ## Operations
 
 - [CLI reference](docs/cli.md)
+- [State and migrations](docs/state-and-recovery.md)
+- [Tracing](docs/tracing.md)
+- [Security model](docs/security.md)
+- [Evaluation harness](docs/evals.md)
+- [Known limitations](docs/limitations.md)
+
+## Integrations and reference
+
 - [Providers](docs/providers.md)
 - [Skills](docs/skills.md)
 - [MCP tools](docs/mcp.md)
-- [Tracing](docs/tracing.md)
-- [Evaluation harness](docs/evals.md)
-
-## Reference
-
 - [Package API reference](docs/api-reference.md)
 - [Full agent context](llms-full.txt)

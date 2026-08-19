@@ -1,15 +1,15 @@
 # Loom Agent
 
-Loom is a CLI-first, durable single-agent harness for developer tasks. V0.3 persists a task graph, separates planning from execution and verification, pauses for durable approvals, records task checkpoints and artifacts, and refuses to mark a plan complete until reviewer checks pass.
+Loom is a CLI-first **local durable multi-agent runtime** for developer tasks. V0.4 coordinates a root planner and bounded child agents through persisted task graphs, delegation, task leases, an internal A2A message bus, isolated context and memory, structured result handoff, verified execution, approvals, and crash recovery.
 
-> Milestone: **Loom Agent V0.3 — Task Graph & Verified Execution**
+> Milestone: **Loom Agent V0.4 — Multi-Agent & A2A Runtime**
 
-Loom V0.3 does not include multi-agent orchestration, a daemon, scheduler, web UI, desktop UI, vector memory, or a security sandbox.
+V0.4 remains local and single-process. It does not include remote workers, distributed networking, a daemon, scheduler, web UI, desktop UI, vector memory, or a security sandbox.
 
 ## Requirements
 
 - Node.js 22 or newer
-- Bun 1.x for dependency installation and development commands
+- Bun 1.x for installation and development
 - Git for repository inspection and diff review
 
 ## Quickstart
@@ -17,59 +17,60 @@ Loom V0.3 does not include multi-agent orchestration, a daemon, scheduler, web U
 ```bash
 bun install
 npm run build
-bun x vitest run --config vitest.config.ts
+npm test
 npm run eval
 
-npm run loom -- run "fix all failing tests"
-npm run loom -- ps
-npm run loom -- inspect <agent-id>
+npm run loom -- run "fix all failing tests" --max-agents 2
+npm run loom -- agents
+npm run loom -- inspect <root-agent-id>
 ```
 
-Loom stores durable state in `.loom/loom.db`. Override it with `LOOM_DB` when you need an isolated database.
+Loom stores state in `.loom/loom.db`. Set `LOOM_DB` to use an isolated database.
 
-## Crash and resume
-
-`--max-tasks` provides a deterministic interruption point for development and evaluation:
+## Agent tree and recovery
 
 ```bash
-npm run loom -- run "fix all failing tests" --max-tasks 3
-npm run loom -- inspect <agent-id>
-npm run loom -- resume <agent-id>
+npm run loom -- run "create a release note" --max-agents 2 --max-tasks 1
+npm run loom -- agents <root-agent-id>
+npm run loom -- delegations <root-agent-id>
+npm run loom -- messages <child-agent-id>
+npm run loom -- trace <root-agent-id>
+npm run loom -- resume <root-agent-id>
 ```
 
-`loom inspect` displays the persisted plan, task status, current task, latest `cp_...` checkpoint, retry information, blocked reason, and tracked artifacts.
+`loom inspect` shows the root plan, agent tree, task owners, delegations, artifacts, approvals, failures, and latest task checkpoint. Resume reconstructs unfinished children and consumes persisted results without creating duplicate delegations.
 
 ## Approval flow
 
-Set a tool permission to `ask` in `.loom/config.json`. Loom creates a durable request and moves the plan to `waiting`.
+Set a tool permission to `ask` in `.loom/config.json`. A restricted child pauses with a durable approval record.
 
 ```bash
-npm run loom -- approvals
+npm run loom -- approvals <root-agent-id>
 npm run loom -- approve <request-id>
-npm run loom -- resume <agent-id>
+npm run loom -- resume <root-agent-id>
 ```
 
-Use `loom deny <request-id>` to reject the operation. Denial fails the affected plan without replaying the tool call.
+Use `deny` to reject the operation. Role tool policies can only narrow project permissions; child agents do not bypass V0.3 tool middleware.
 
 ## Documentation
 
 - [Getting started](docs/getting-started.md)
+- [Architecture](docs/architecture.md)
+- [Local multi-agent runtime](docs/multi-agent.md)
+- [Delegation, leasing, and result handoff](docs/delegation.md)
+- [Local A2A message bus](docs/a2a.md)
+- [Multi-agent recovery and cancellation](docs/multi-agent-recovery.md)
 - [CLI reference](docs/cli.md)
 - [Configuration](docs/configuration.md)
-- [Architecture](docs/architecture.md)
 - [Task graph and verification](docs/task-graph.md)
-- [State, schema, and recovery](docs/state-and-recovery.md)
-- [Providers](docs/providers.md)
-- [Skills](docs/skills.md)
-- [MCP](docs/mcp.md)
-- [Tracing and observability](docs/tracing.md)
-- [Security model](docs/security.md)
+- [State and migrations](docs/state-and-recovery.md)
+- [Tracing](docs/tracing.md)
+- [Security](docs/security.md)
 - [Evaluation harness](docs/evals.md)
 - [Package API reference](docs/api-reference.md)
-- [Development guide](docs/development.md)
 - [Known limitations](docs/limitations.md)
 
-Agent-oriented entry points are available in [llms.txt](llms.txt) and [llms-full.txt](llms-full.txt).
+Additional provider, skills, MCP, and development guides are under [`docs/`](docs/). Agent-oriented entry points are [llms.txt](llms.txt) and [llms-full.txt](llms-full.txt).
 
 ## License
 

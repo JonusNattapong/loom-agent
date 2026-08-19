@@ -1,6 +1,6 @@
 ---
 title: Skills
-version: 0.3
+version: 0.4
 category: how-to
 ---
 
@@ -25,4 +25,4 @@ npm run loom -- skills
 npm run loom -- skills show testing
 ```
 
-Discovery is deterministic and ignores directories without a readable `SKILL.md`. V0.3 parses `--skill`, but task-graph execution does not yet inject selected skill instructions or enforce the skill tool list. The older `AgentLoop` supports selected-skill context injection through its API.
+Discovery is deterministic and ignores directories without a readable `SKILL.md`. V0.4 parses `--skill`, but graph children do not yet inject selected skill instructions or enforce the skill tool list. The older `AgentLoop` supports selected-skill context injection through its API.

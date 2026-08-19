@@ -1,10 +1,18 @@
 ---
 title: Package API reference
-version: 0.3
+version: 0.4
 category: reference
 ---
 
 # Package API reference
+
+## `@loom/coordinator`
+
+- `AgentCoordinator.spawnAgent`, `delegate`, and `cancelAgent`: manage durable parent-child lifecycle.
+- `AgentMessageBus.send`, `receive`, `acknowledge`, and `list`: operate the local durable A2A bus.
+- `AgentContextCompiler.compile`: build role- and task-scoped context.
+- `MultiAgentRuntime.run` and `resume`: coordinate bounded task delegation, result handoff, repair, and recovery.
+- `RoleRegistry.get`, `list`, and `load`: expose built-in roles and optional `.loom/agents/<role>.md` overrides.
 
 ## `@loom/planner`
 
@@ -17,7 +25,7 @@ category: reference
 
 ## `@loom/state`
 
-`StateStore` owns migrations and CRUD for agents, plans, tasks, memory, approvals, artifacts, checkpoints, traces, and tool ledger records. Constructor accepts a SQLite path or uses `LOOM_DB`.
+`StateStore` owns migrations and CRUD for agents, plans, tasks, scoped memory, approvals, artifacts, checkpoints, traces, tool ledger records, delegations, messages, results, and leases. Atomic helpers cover child/delegation creation, lease acquisition, and result/message persistence. Call `close()` before deleting or replacing a database file.
 
 ## `@loom/tools`
 

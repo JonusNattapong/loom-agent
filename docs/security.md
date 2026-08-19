@@ -1,6 +1,6 @@
 ---
 title: Security model
-version: 0.3
+version: 0.4
 category: explanation
 ---
 
@@ -24,12 +24,18 @@ Commands are still executed through `cmd /c` on Windows or `sh -c` on POSIX. Tre
 
 Approval records include the tool name and normalized input. Review the request before approving. Approval authorizes only the tool call with the associated tool-call id; resume reuses that id.
 
+V0.4 also records the requesting child, role, task, argument summary, and reason. Approval does not grant a role tools that its role definition excludes.
+
+## Child isolation
+
+Every child uses the same `ToolRegistry` and `ToolExecutor` middleware as V0.3. Role policy can narrow tools but cannot bypass project `deny` or `ask` rules. Context and memory isolation controls information flow; it is not an operating-system security boundary.
+
 ## Secrets
 
 - Keep `OPENAI_API_KEY` in the environment.
 - Do not commit `.loom/config.json` when it contains environment overrides or sensitive MCP settings.
 - MCP child processes inherit the Loom environment plus configured overrides.
-- Trace payloads should not include credentials. V0.3 does not implement general secret redaction.
+- Trace payloads should not include credentials. V0.4 does not implement general secret redaction.
 
 ## Trust assumptions
 

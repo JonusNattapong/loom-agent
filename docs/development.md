@@ -1,6 +1,6 @@
 ---
 title: Development guide
-version: 0.3
+version: 0.4
 category: how-to
 ---
 
@@ -20,7 +20,7 @@ The build uses TypeScript project references. Tests live beside source files and
 
 ## Package dependency direction
 
-Keep shared contracts in `core`. State may depend on core. Planner depends on state/core. CLI wires concrete implementations. Avoid importing CLI code from library packages.
+Keep shared contracts in `core`. State depends on core. Planner depends on state/core. Coordinator depends on planner, context, state, and core. CLI wires concrete providers and tools. Avoid importing CLI code from library packages.
 
 ## Adding a migration
 
@@ -30,7 +30,7 @@ Append a numbered `applyMigration` call. Never rewrite an applied migration. Use
 
 1. Add or extend the shared state type.
 2. Persist the transition in `StateStore`.
-3. Implement scheduling/execution behavior in `@loom/planner`.
+3. Implement graph behavior in `@loom/planner` or multi-agent ownership/recovery in `@loom/coordinator`.
 4. Add a focused unit test and, when user-visible, a fixed eval scenario.
 5. Update CLI output and documentation.
 

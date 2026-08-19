@@ -1,12 +1,12 @@
 ---
 title: Getting started
-version: 0.3
+version: 0.4
 category: tutorial
 ---
 
 # Getting started
 
-This tutorial runs Loom with its deterministic mock provider, inspects the generated plan, pauses partway through execution, and resumes from SQLite state.
+This tutorial runs Loom with its deterministic mock provider, inspects a local agent tree, pauses partway through execution, and resumes from SQLite state.
 
 ## 1. Install and verify
 
@@ -19,10 +19,10 @@ bun x vitest run --config vitest.config.ts
 ## 2. Run a goal
 
 ```bash
-npm run loom -- run "fix all failing tests"
+npm run loom -- run "fix all failing tests" --max-agents 2
 ```
 
-The command prints an agent id, plan id, and final status. The coding-task plan contains repository inspection, baseline tests, diagnosis, implementation, targeted tests, full tests, and diff review.
+The command prints a root agent id, plan id, agent tree, and final status. Loom delegates graph tasks to role-scoped children.
 
 The default provider is `mock`. It is deterministic and useful for testing orchestration, but it does not independently understand or repair a real defect. Configure the OpenAI-compatible provider for real model output.
 
@@ -30,7 +30,10 @@ The default provider is `mock`. It is deterministic and useful for testing orche
 
 ```bash
 npm run loom -- ps
+npm run loom -- agents <root-agent-id>
 npm run loom -- inspect <agent-id>
+npm run loom -- delegations <root-agent-id>
+npm run loom -- messages <child-agent-id>
 npm run loom -- trace <agent-id>
 ```
 
@@ -44,7 +47,7 @@ npm run loom -- inspect <agent-id>
 npm run loom -- resume <agent-id>
 ```
 
-The first command pauses before the fourth runnable task. Resume reloads the graph, checkpoints, approvals, and task status from SQLite instead of creating a new plan.
+The first command pauses after three child executions. Resume reloads agents, graph state, delegations, leases, messages, checkpoints, approvals, and results instead of creating a new plan or duplicate child.
 
 ## 5. Use an isolated database
 

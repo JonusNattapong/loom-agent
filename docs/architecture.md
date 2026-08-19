@@ -1,74 +1,66 @@
 ---
 title: Architecture
-version: 0.3
+version: 0.4
 category: explanation
 ---
 
 # Architecture
 
-Loom V0.3 is a single-process, single-agent runtime. Separation refers to responsibilities and phases, not separate autonomous agents.
+Loom V0.4 adds a coordination layer around the V0.3 task graph. The existing single-agent `VerifiedExecutionRuntime` remains available for migrated agents and compatibility tests.
 
 ```mermaid
 flowchart TD
-  CLI[CLI] --> Plan[Plan Engine]
-  Plan --> Graph[Task Graph Runtime]
-  Graph --> Executor[Task Executor]
-  Graph --> Reviewer[Reviewer / Verification]
-  Executor --> Provider[Provider]
-  Executor --> Middleware[Tool Middleware]
-  Middleware --> Native[Native Tools]
-  Middleware --> MCP[MCP Tools]
-  Graph --> State[State Store]
-  Middleware --> State
-  Reviewer --> State
+  CLI[CLI] --> Coordinator[MultiAgentRuntime]
+  Coordinator --> Plan[Plan Engine / Task Graph]
+  Coordinator --> Roles[Role Registry]
+  Coordinator --> Context[Agent Context Compiler]
+  Coordinator --> Bus[Durable A2A Bus]
+  Coordinator --> Lease[Task Leasing]
+  Coordinator --> Children[Bounded Child Agents]
+  Children --> Provider[Provider]
+  Children --> Tools[Tool Middleware]
+  Tools --> Native[Native Tools]
+  Tools --> MCP[MCP Tools]
+  Plan & Bus & Lease & Children & Tools --> State[State Store]
   State --> SQLite[(SQLite)]
-  Skills[Skills Runtime] --> Context[Context Compiler]
-  Memory[Working Memory] --> Context
-  Context --> Legacy[AgentLoop compatibility path]
 ```
 
 ## Package boundaries
 
 | Package | Responsibility |
 | --- | --- |
-| `@loom/core` | Shared contracts and lifecycle types. |
-| `@loom/state` | SQLite loading, migrations, durable records, and queries. |
-| `@loom/planner` | Plan creation, dependency scheduling, execution phases, retries, reviewer gating, and recovery. |
-| `@loom/tools` | Tool registry, permissions, approvals, idempotency ledger, result limits, and native tools. |
+| `@loom/core` | Shared lifecycle, delegation, message, result, lease, memory, and trace contracts. |
+| `@loom/state` | SQLite migrations v1–v5, transactions, durable records, and queries. |
+| `@loom/planner` | Plan creation, dependency scheduling, V0.3 verified execution, retries, and recovery. |
+| `@loom/coordinator` | Agent registry operations, roles, context isolation, A2A bus, delegation, bounded coordination, recovery, and cancellation. |
+| `@loom/tools` | Tool registry, permissions, approvals, idempotency, result limits, and native tools. |
 | `@loom/providers` | Mock and OpenAI-compatible provider normalization. |
-| `@loom/mcp` | Stdio MCP initialization, discovery, and tool adaptation. |
-| `@loom/context` | Priority-based context compilation for the compatibility runtime. |
-| `@loom/skills` | Project skill discovery and frontmatter parsing. |
-| `@loom/runtime` | V0.2-compatible `AgentLoop` and context/provider loop. |
-| `@loom/evals` | Fixed deterministic orchestration scenarios. |
-| `@loom/cli` | Config loading, command parsing, service wiring, and output. |
+| `@loom/context` | Priority-based context compilation. |
+| `@loom/skills` | Project skill discovery. |
+| `@loom/mcp` | Stdio MCP discovery and tool adaptation. |
+| `@loom/runtime` | V0.2-compatible `AgentLoop`. |
+| `@loom/evals` | V0.3 regression and V0.4 multi-agent scenarios. |
+| `@loom/cli` | Config, service wiring, commands, and output. |
 
-## V0.3 execution path
+## Coordination sequence
 
 ```mermaid
 sequenceDiagram
   participant U as User
-  participant C as CLI
-  participant P as Plan Engine
-  participant G as Graph Runtime
-  participant E as Executor
-  participant R as Reviewer
+  participant C as Coordinator
   participant S as SQLite
+  participant A as Child Agent
+  participant R as Root Agent
   U->>C: loom run goal
-  C->>S: create agent
-  C->>P: create plan
-  P->>S: persist tasks and dependencies
-  loop runnable tasks
-    G->>S: load graph state
-    G->>E: execute task
-    E->>S: persist result/checkpoint/artifacts
-  end
-  G->>R: verify targeted tests/full suite/diff
-  alt verification passes
-    R->>S: complete task and plan
-  else verification fails
-    R->>S: reopen dependency or fail plan
-  end
+  C->>S: persist root, plan, tasks
+  C->>S: atomically create child + delegation
+  C->>S: acquire task lease
+  C->>A: isolated task context
+  A->>S: tool ledger, traces, artifacts
+  A->>S: persist structured result + A2A message
+  C->>R: deliver summary exactly once
+  R->>S: acknowledge and update graph
+  C->>S: verification or repair decision
 ```
 
-SQLite is the durable source of truth. In-memory objects are projections of persisted state and may be recreated after process interruption.
+SQLite is the source of truth. Runtime objects are disposable projections. V0.4 uses synchronous SQLite transactions and bounded asynchronous workers inside one process; it is not a distributed system.

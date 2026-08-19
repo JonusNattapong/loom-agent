@@ -1,6 +1,6 @@
 ---
 title: Configuration
-version: 0.3
+version: 0.4
 category: how-to
 ---
 
@@ -13,6 +13,7 @@ Create `.loom/config.json` in the project root. Start from `.loom/config.example
   "provider": "mock",
   "model": "gpt-4o-mini",
   "context": {"maxChars": 50000},
+  "agents": {"maxConcurrent": 2},
   "permissions": {
     "read_file": "allow",
     "write_file": "ask",
@@ -30,7 +31,7 @@ For provider and model selection:
 environment variables > .loom/config.json > defaults
 ```
 
-V0.3 does not provide `--provider` or `--model` CLI flags.
+V0.4 does not provide `--provider` or `--model` CLI flags.
 
 ## Environment variables
 
@@ -46,7 +47,11 @@ Do not commit `.loom/config.json` if it contains machine-specific commands or en
 
 ## Context budget
 
-`context.maxChars` configures the V0.2-compatible `AgentLoop` context compiler. The V0.3 task-graph executor currently sends a focused goal/current-task prompt and does not use this budget for each graph task.
+`context.maxChars` limits each isolated child context and the V0.2-compatible `AgentLoop` context.
+
+## Agent concurrency
+
+`agents.maxConcurrent` bounds child execution and defaults to 2. `--max-agents` overrides it for one command. V0.4 does not start remote workers or background processes.
 
 ## Permission values
 

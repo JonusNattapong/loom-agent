@@ -1,10 +1,12 @@
 ---
 title: Task graph and verified execution
-version: 0.3
+version: 0.4
 category: explanation
 ---
 
 # Task graph and verified execution
+
+V0.4 keeps the V0.3 dependency and verification model, then adds child ownership and leases. A task becomes runnable only after dependencies complete; the coordinator assigns that task to one role-scoped child.
 
 ## Plan templates
 
@@ -20,7 +22,7 @@ Inspect repository
   -> Review diff
 ```
 
-Other goals receive `Inspect goal -> Execute goal -> Verify result`. V0.3 does not ask the model to generate arbitrary graph topology.
+Other goals receive `Inspect goal -> Execute goal -> Verify result`. V0.4 does not ask the model to generate arbitrary graph topology.
 
 ## Scheduling
 

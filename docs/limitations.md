@@ -1,21 +1,26 @@
 ---
 title: Known limitations
-version: 0.3
+version: 0.4
 category: explanation
 ---
 
 # Known limitations
 
-- Plan topology is rule-based, not model-generated.
+- V0.4 is a local, single-process multi-agent runtime. It has no remote workers, network A2A, daemon, scheduler, distributed lock service, or cloud queue.
+- Plan topology and role selection are rule-based rather than model-generated.
 - “Targeted tests” currently run the full Vitest suite.
-- Diff review checks whitespace/errors and statistics; it is not a semantic code-review model pass.
-- OpenAI-compatible execution supports one tool round and no streaming.
-- Skills are discoverable, but V0.3 graph execution does not inject `--skill` instructions or enforce skill tool lists.
+- Diff review checks whitespace/errors and statistics; it is not semantic model review.
+- The OpenAI-compatible provider supports one tool round and no streaming.
+- All agents use the same provider/model by default. Role model overrides are represented in config types but not routed yet.
+- Role Markdown overrides replace instructions only; tool and skill policy remains in built-in definitions.
+- Skills are discoverable, but graph children do not inject `--skill` instructions yet.
 - MCP supports basic line-delimited stdio JSON-RPC only.
-- Approval decisions are local CLI records without user identity or cryptographic signing.
-- SQLite access is synchronous and single-process oriented; no daemon or distributed coordination exists.
-- Artifact tracking records provider `write_file` calls and executor-declared artifacts. It does not derive a complete filesystem diff automatically.
-- The eval harness uses deterministic test doubles and is not a model-quality benchmark.
-- Loom is not a sandbox and does not redact arbitrary secrets from traces.
+- SQLite access is synchronous. Bounded concurrency coordinates asynchronous child work but does not make SQLite distributed or multi-writer safe across several Loom processes.
+- A lease prevents concurrent assignment in one database. If a side effect was interrupted, the tool ledger may require human intervention instead of replaying it.
+- Artifact tracking records declared tool/executor changes; it does not derive a complete filesystem diff automatically.
+- Approval decisions have no user identity or cryptographic signature.
+- Context visibility and role tools reduce accidental sharing; Loom is not a sandbox.
+- Trace payloads do not receive general secret redaction.
+- The deterministic eval harness measures runtime invariants, not model quality.
 
-Suitable V0.4 work includes model-assisted planning, real targeted-test selection, semantic review, multi-round provider/tool loops, stronger approval identity, and richer MCP lifecycle handling. Multi-agent orchestration should remain deferred until these single-agent controls are mature.
+Reasonable V0.5 work includes model-assisted planning and delegation, semantic review, true targeted-test selection, multi-round providers, richer role configuration, and stronger approval identity. Remote/distributed execution should remain a separate milestone.

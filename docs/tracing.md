@@ -1,19 +1,29 @@
 ---
 title: Tracing and observability
-version: 0.3
+version: 0.4
 category: reference
 ---
 
 # Tracing and observability
 
-Trace records are ordered by SQLite id and include `agentId`, event type, JSON data, and timestamp.
+Trace records are ordered by SQLite id and support `rootAgentId`, `agentId`, `parentAgentId`, `taskId`, `delegationId`, `messageId`, `toolCallId`, `checkpointId`, event data, and timestamp.
 
 ```bash
 npm run loom -- trace <agent-id>
 npm run loom -- trace <agent-id> --json
 ```
 
-## V0.3 graph events
+For a root id, `trace` returns the correlated tree timeline. For a child id, it returns that agent's local events.
+
+## V0.4 coordination events
+
+- `agent.spawned`, `agent.started`, `agent.completed`, `agent.failed`, `agent.cancelled`
+- `delegation.created`, `delegation.assigned`, `delegation.completed`, `delegation.failed`
+- `message.sent`, `message.delivered`, `message.acknowledged`
+- `task.leased`, `task.released`, `task.reassigned`
+- `result.handoff`
+
+## Task graph events
 
 - `agent.created`
 - `plan.created`

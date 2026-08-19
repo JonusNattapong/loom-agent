@@ -1,6 +1,9 @@
 node_modules/
 dist/
-.loom/
+.loom/*
+!.loom/skills/
+!.loom/skills/**
+!.loom/config.example.json
 coverage/
 *.db
 .loom-test-tools/

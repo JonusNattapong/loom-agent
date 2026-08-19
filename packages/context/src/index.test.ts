@@ -1,0 +1,3 @@
+import {describe,it,expect} from "vitest";
+import {ContextCompiler} from "./index.js";
+describe("ContextCompiler",()=>{it("preserves required goal/tools and truncates lower priority sources",async()=>{const events:string[]=[];const result=await new ContextCompiler().compile({goal:"must remain",tools:[{name:"read_file",description:"required"}],messages:[{role:"user",content:"x".repeat(100)}],files:["y".repeat(100)],maxChars:120,trace:(type)=>events.push(type)});expect(result.text).toContain("must remain");expect(result.text).toContain("read_file");expect(result.excluded.length).toBeGreaterThan(0);expect(events).toContain("context.compile.completed");});});

@@ -1,0 +1,7 @@
+{
+  "provider": "mock",
+  "model": "gpt-4o-mini",
+  "context": {"maxChars": 50000},
+  "permissions": {"read_file": "allow", "write_file": "ask", "shell": "ask"},
+  "mcpServers": {}
+}

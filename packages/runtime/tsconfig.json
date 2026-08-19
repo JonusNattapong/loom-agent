@@ -1,1 +1,1 @@
-{"extends":"../../tsconfig.base.json","compilerOptions":{"rootDir":"src","outDir":"dist"},"references":[{"path":"../core"},{"path":"../providers"},{"path":"../state"},{"path":"../tools"}],"include":["src/index.ts"]}
+{"extends":"../../tsconfig.base.json","compilerOptions":{"rootDir":"src","outDir":"dist"},"references":[{"path":"../context"},{"path":"../core"},{"path":"../providers"},{"path":"../skills"},{"path":"../state"},{"path":"../tools"}],"include":["src/index.ts"]}

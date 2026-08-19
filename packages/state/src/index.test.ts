@@ -23,7 +23,16 @@ describe("StateStore",()=>{
       CREATE TABLE plans (id TEXT PRIMARY KEY,agent_id TEXT NOT NULL,goal TEXT NOT NULL,status TEXT NOT NULL,phase TEXT NOT NULL,created_at TEXT NOT NULL,updated_at TEXT NOT NULL); CREATE TABLE plan_tasks (id TEXT PRIMARY KEY,plan_id TEXT NOT NULL,title TEXT NOT NULL,kind TEXT NOT NULL,status TEXT NOT NULL,dependencies TEXT NOT NULL,retry_count INTEGER NOT NULL,max_retries INTEGER NOT NULL,failure_policy TEXT,blocked_reason TEXT,result TEXT,position INTEGER NOT NULL,created_at TEXT NOT NULL,updated_at TEXT NOT NULL);
       CREATE TABLE approval_requests (id TEXT PRIMARY KEY,agent_id TEXT NOT NULL,task_id TEXT,tool_call_id TEXT,tool_name TEXT NOT NULL,input TEXT NOT NULL,status TEXT NOT NULL,created_at TEXT NOT NULL,decided_at TEXT); CREATE TABLE artifacts (id TEXT PRIMARY KEY,agent_id TEXT NOT NULL,task_id TEXT,checkpoint_id TEXT,path TEXT NOT NULL,operation TEXT NOT NULL,created_at TEXT NOT NULL); CREATE TABLE task_checkpoints (id TEXT PRIMARY KEY,agent_id TEXT NOT NULL,plan_id TEXT NOT NULL,task_id TEXT,phase TEXT NOT NULL,step INTEGER NOT NULL,snapshot TEXT NOT NULL,created_at TEXT NOT NULL);
     `);db.close();
-    try{const state=new StateStore(filename);expect(state.getSchemaVersion()).toBe(8);expect(state.getAgent("legacy")).toMatchObject({goal:"legacy goal",role:"general",rootAgentId:"legacy",result:"done"});expect(state.listDelegations("legacy")).toEqual([]);state.close();}
+    try{const state=new StateStore(filename);expect(state.getSchemaVersion()).toBe(11);expect(state.getAgent("legacy")).toMatchObject({goal:"legacy goal",role:"general",rootAgentId:"legacy",result:"done"});expect(state.listDelegations("legacy")).toEqual([]);state.close();}
     finally{rmSync(filename,{force:true});}
+  });
+
+  it("persists remote workers, assignments, leases, and protocol state",()=>{
+    const state=new StateStore(":memory:");
+    state.registerWorker({workerId:"w1",name:"worker",capabilities:["chat"]});
+    state.assignRemote({workerId:"w1",payload:{x:1},id:"e1"});
+    expect(state.acquireRemoteLease("e1","w1",1000)).toBeTruthy();
+    expect(state.getRemoteAssignment("e1")).toMatchObject({id:"e1",workerId:"w1"});
+    expect(state.getWorker("w1")).toMatchObject({workerId:"w1",status:"online"}); state.close();
   });
 });

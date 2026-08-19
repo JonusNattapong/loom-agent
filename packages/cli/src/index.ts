@@ -11,6 +11,7 @@ import {SkillRuntime} from "@loom/skills";
 import {McpClient,mcpTools} from "@loom/mcp";
 import {PlanEngine,Reviewer,TaskExecutor,VerifiedExecutionRuntime} from "@loom/planner";
 import {AdaptiveOrchestrator} from "@loom/adaptive";
+import {Daemon,nextScheduleAt} from "@loom/daemon";
 
 type Config={
   provider?:string;model?:string;context?:{maxChars?:number};permissions?:Record<string,PermissionLevel>;
@@ -19,6 +20,7 @@ type Config={
   execution?:{maxModelRoundsPerTask?:number;maxToolCallsPerTask?:number};
   review?:{enabled?:boolean;maxRepairRounds?:number};
   verification?:{targetedTests?:boolean;final?:"targeted"|"package"|"full"};
+  daemon?:{maxConcurrentJobs?:number;heartbeatIntervalMs?:number;staleAfterMs?:number;shutdownGraceMs?:number};jobs?:{leaseMs?:number;renewEveryMs?:number;maxAttempts?:number};scheduler?:{enabled?:boolean;maxSleepMs?:number};
   mcpServers?:Record<string,{command:string;args?:string[];env?:Record<string,string>}>;
 };
 
@@ -33,7 +35,7 @@ const args=argv.slice(1).filter(value=>!skipped.has(value));const state=new Stat
 async function loadTools(){for(const [name,server] of Object.entries(cfg.mcpServers??{})){try{const client=await new McpClient(server,(type,data)=>console.error(`[${type}]`,data)).connect();for(const tool of mcpTools(client))registry.register(tool);}catch(error){console.error(`MCP server ${name} unavailable: ${error instanceof Error?error.message:error}`);}}return registry;}
 function loadProvider():Provider{const name=process.env.LOOM_PROVIDER??cfg.provider??"mock";if(name==="openai")return new OpenAICompatibleProvider(undefined,process.env.LOOM_MODEL??cfg.model);return new MockProvider();}
 function output(value:unknown,human?:string){console.log(json?JSON.stringify(value,null,2):human??(typeof value==="string"?value:JSON.stringify(value,null,2)));}
-function usage(){console.log("loom run <goal> [--max-agents N] | plan <id> | reviews <id> | ps | inspect <id> | resume <id> | trace <id> | agents | agent inspect|cancel <id> | delegations <id> | messages <id> | approve|deny <request-id>");}
+function usage(){console.log("loom run <goal> [--max-agents N] | daemon start|stop|status | jobs | job enqueue|inspect|cancel|retry <id> | schedules | schedule add|pause|resume|delete <id> | plan <id> | reviews <id> | ps | inspect <id> | resume <id> | trace <id> | agents | agent inspect|cancel <id> | delegations <id> | messages <id> | approve|deny <request-id>");}
 
 function scopedPermissions(tools:ToolRegistry,allowedTools?:string[]):Record<string,PermissionLevel>{
   const permissions={...(cfg.permissions??{})};
@@ -87,6 +89,26 @@ function inspectHuman(agentId:string){
 try{
   if(command==="run"){
     const goal=args.join(" ");if(!goal)throw new Error("goal is required");const agent=state.createAgentRecord({goal,role:"planner"});state.addTrace(agent.id,"agent.created",{goal});const provider=loadProvider();const tools=await loadTools();const toolExecutor=new ToolExecutor(tools,{permissions:scopedPermissions(tools),ledger:state,approvals:state,artifacts:state,trace:(type,data)=>state.addTrace(agent.id,type,data)});const adaptive=new AdaptiveOrchestrator(state,provider,{maxModelRounds:12,maxToolCalls:30,provider,tool:(call,agentId,taskId)=>toolExecutor.execute(call.name,call.input,{agentId,taskId,toolCallId:call.id??`${taskId}:${call.name}`})});const result=await adaptive.run(agent.id,goal);const plan=state.getPlanForAgent(agent.id);output({agent:state.getAgent(agent.id),plan:result,tasks:plan?state.listPlanTasks(plan.id):[],agents:agentTree(agent.id),delegations:state.listDelegations(agent.id)},`Agent: ${agent.id}\nPlan: ${plan?.id??"none"}\nStatus: ${result.status}`);
+  }else if(command==="daemon"&&args[0]==="start"){
+    const daemon=new Daemon(state,{provider:loadProvider(),maxConcurrentJobs:cfg.daemon?.maxConcurrentJobs,heartbeatIntervalMs:cfg.daemon?.heartbeatIntervalMs,staleAfterMs:cfg.daemon?.staleAfterMs,leaseMs:cfg.jobs?.leaseMs,pollMs:1000});await daemon.start();output(await daemon.status(),`Daemon ${daemon.daemonId} running`);const shutdown=async()=>{await daemon.stop();process.exit(0);};process.once("SIGINT",shutdown);process.once("SIGTERM",shutdown);await new Promise<void>(()=>{});
+  }else if(command==="daemon"&&args[0]==="status"){
+    const daemons=state.listDaemons();const active=daemons.find(d=>d.status==="running"&&d.heartbeatAt>Date.now()-(cfg.daemon?.staleAfterMs??20000));const jobs=state.listJobs();output({running:Boolean(active),daemon:active,jobs,schedules:state.listSchedules()});
+  }else if(command==="daemon"&&args[0]==="stop"){
+    const active=state.listDaemons().find(d=>d.status==="running"&&d.heartbeatAt>Date.now()-(cfg.daemon?.staleAfterMs??20000));if(active)state.stopDaemon(active.daemonId);output({stopped:active?.daemonId??null});
+  }else if(command==="jobs"){
+    const statusIndex=args.indexOf("--status");output(state.listJobs(statusIndex>=0?args[statusIndex+1]:undefined));
+  }else if(command==="job"&&args[0]==="enqueue"){
+    const goal=args.slice(1).filter(a=>!a.startsWith("--")).join(" ");if(!goal)throw new Error("goal is required");output(state.enqueueJob({type:"agent_run",payload:{goal},idempotencyKey:`manual:${goal}`}));
+  }else if(command==="job"&&args[0]==="inspect"){
+    const job=state.getJob(args[1]);if(!job)throw new Error(`job not found: ${args[1]}`);output(job);
+  }else if(command==="job"&&(args[0]==="cancel"||args[0]==="retry")){
+    const job=state.getJob(args[1]);if(!job)throw new Error(`job not found: ${args[1]}`);if(args[0]==="cancel")state.updateJob(job.id,"cancelled",{errorMessage:"cancelled by user"});else state.updateJob(job.id,"queued",{availableAt:Date.now(),errorMessage:null});output(state.getJob(job.id));
+  }else if(command==="schedules"){
+    output(state.listSchedules());
+  }else if(command==="schedule"&&args[0]==="add"){
+    const goal=args.slice(1).filter(a=>!a.startsWith("--")).join(" ");const everyIndex=args.indexOf("--every"),atIndex=args.indexOf("--at"),cronIndex=args.indexOf("--cron"),tzIndex=args.indexOf("--timezone");const kind=everyIndex>=0?"interval":atIndex>=0?"once":cronIndex>=0?"cron":"once";const expression=everyIndex>=0?args[everyIndex+1]:atIndex>=0?args[atIndex+1]:cronIndex>=0?args[cronIndex+1]:new Date(Date.now()+60000).toISOString();const timezone=tzIndex>=0?args[tzIndex+1]:"UTC";const next=nextScheduleAt(kind,expression);if(!next||Number.isNaN(next))throw new Error("invalid schedule expression");output(state.createSchedule({kind,expression,timezone,payload:{goal},nextRunAt:next}));
+  }else if(command==="schedule"&&(args[0]==="pause"||args[0]==="resume"||args[0]==="delete")){
+    const schedule=state.getSchedule(args[1]);if(!schedule)throw new Error(`schedule not found: ${args[1]}`);if(args[0]==="delete")state.updateSchedule(schedule.id,{enabled:false,errorMessage:"deleted"});else state.updateSchedule(schedule.id,{enabled:args[0]==="resume",nextRunAt:args[0]==="resume"?nextScheduleAt(schedule.kind,schedule.expression):undefined});output(state.getSchedule(schedule.id));
   }else if(command==="plan"){
     const agent=state.getAgent(args[0]);if(!agent)throw new Error("agent not found");const plan=state.getPlanForAgent(agent.rootAgentId);output({plan,revisions:plan?state.listPlanRevisions(plan.id):[],tasks:plan?state.listPlanTasks(plan.id):[]});
   }else if(command==="reviews"){

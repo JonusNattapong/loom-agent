@@ -10,6 +10,7 @@
     "@loom/planner": "0.3.0",
     "@loom/state": "0.1.0",
     "@loom/tools": "0.1.0",
-    "@loom/adaptive": "file:../adaptive"
+    "@loom/adaptive": "file:../adaptive",
+    "@loom/daemon": "file:../daemon"
   }
 }

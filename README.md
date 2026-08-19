@@ -79,3 +79,7 @@ No license file is currently included. Treat the repository as source-available 
 ## V0.6 adaptive execution
 
 Loom now includes model-assisted planning, capability-aware deterministic routing, bounded multi-round provider execution, semantic review, repair-ready review results, and targeted verification in `@loom/adaptive`. Runtime policy remains authoritative: model output is validated, tool permissions and approvals are unchanged, and deterministic fallback is used when structured model output is unavailable. See `docs/adaptive-planning.md`, `docs/semantic-review.md`, `docs/model-routing.md`, and `docs/verification.md`.
+
+## V0.7 daemon and background runtime
+
+Loom V0.7 adds a durable local foreground daemon, SQLite-backed jobs and schedules, transactional occurrence dedupe, leases, bounded retries, restart recovery, and CLI inspection. Scheduled work enters the same adaptive orchestration pipeline as `loom run`; this is a restart-resumable local runtime, not a distributed scheduler or exactly-once network system. See `docs/daemon.md`, `docs/jobs.md`, `docs/scheduler.md`, and `docs/background-runtime.md`.

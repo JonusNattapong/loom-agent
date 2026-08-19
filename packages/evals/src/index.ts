@@ -5,6 +5,7 @@ import {StateStore} from "@loom/state";
 import {ToolExecutor,ToolRegistry} from "@loom/tools";
 import {ModelAdaptivePlanner,MultiRoundExecutor,selectRole} from "@loom/adaptive";
 import type {Provider,ProviderResponse} from "@loom/core";
+import {Daemon} from "@loom/daemon";
 
 export type EvalResult={name:string;passed:boolean;details:string};
 
@@ -76,9 +77,13 @@ async function adaptiveScenarios():Promise<EvalResult[]> {
  const state=new StateStore(":memory:"); const agent=state.createAgent("recovery"); const plan=state.createPlan(agent.id,"recover"); const recoveryProposal={summary:"recover",tasks:[]}; state.recordPlanRevision({planId:plan.id,rootAgentId:agent.id,version:1,proposal:recoveryProposal}); state.recordPlanRevision({planId:plan.id,rootAgentId:agent.id,version:1,proposal:recoveryProposal}); const planOnce=state.listPlanRevisions(plan.id).length===1; state.recordExecutionRound({rootAgentId:agent.id,taskId:"task",round:1,status:"checkpointed",messages:[]}); state.recordExecutionRound({rootAgentId:agent.id,taskId:"task",round:1,status:"checkpointed",messages:[]}); const executionOnce=state.listExecutionRounds("task").length===1; state.recordReview({rootAgentId:agent.id,taskId:"task",round:1,verdict:"reject",summary:"repair",issues:[]}); state.recordRepair({rootAgentId:agent.id,taskId:"task",round:1,reviewId:"task:review1",status:"created"}); state.recordRepair({rootAgentId:agent.id,taskId:"task",round:1,reviewId:"task:review1",status:"created"}); const reviewOnce=state.listReviews("task").length===1&&state.listRepairs("task").length===1; state.close(); return [{name:"v0.6 planner fallback",passed:proposal.source==="fallback"&&proposal.tasks.length===3,details:`source=${proposal.source}; tasks=${proposal.tasks.length}`},{name:"v0.6 capability routing",passed:routed.role==="coder",details:`role=${routed.role}`},{name:"v0.6 execution bounds",passed:execution.status==="completed"&&calls===0,details:`status=${execution.status}; rounds=${execution.rounds}`},{name:"v0.6 crash planning recovery",passed:planOnce,details:"plan revision idempotent"},{name:"v0.6 crash execution recovery",passed:executionOnce,details:"execution round idempotent"},{name:"v0.6 crash review recovery",passed:reviewOnce,details:"review and repair idempotent"}];
 }
 
+
+async function daemonScenarios():Promise<EvalResult[]> { const state=new StateStore(":memory:"); const daemon=new Daemon(state,{pollMs:5,maxConcurrentJobs:1,jobRunner:{run:async (job:any)=>({status:"completed",rootAgentId:job.rootAgentId??"root",summary:"ok"})}}); await daemon.start(); const job=state.enqueueJob({type:"agent_run",payload:{goal:"background"},idempotencyKey:"eval:job"}); await new Promise(r=>setTimeout(r,30)); const done=state.getJob(job.id).status==="completed"; const schedule=state.createSchedule({kind:"interval",expression:"1m",timezone:"UTC",payload:{goal:"scheduled"},nextRunAt:Date.now()-1}); const a=state.materializeSchedule(schedule.id,schedule.nextRunAt,{goal:"scheduled"}),b=state.materializeSchedule(schedule.id,schedule.nextRunAt,{goal:"scheduled"}); await daemon.stop(); const dedup=a.id===b.id&&state.listJobs().filter((j:any)=>j.scheduleId===schedule.id).length===1; state.close(); return [{name:"v0.7 durable job execution",passed:done,details:`status=${stateClosedSafe(done)}`},{name:"v0.7 schedule occurrence dedupe",passed:dedup,details:`job=${a.id}`}]; }
+function stateClosedSafe(ok:boolean){return ok?"completed":"failed";}
+
 export async function runEvalHarness():Promise<EvalResult[]>{
   const results=await Promise.all([graphScenario("fix failing tests",{rejectOnce:true}),graphScenario("create file",{artifacts:1}),graphScenario("modify multiple files",{artifacts:3}),graphScenario("crash + resume",{crash:true}),graphScenario("failed verification",{alwaysReject:true})]);
   const registry=new ToolRegistry().register({name:"danger",description:"danger",execute:async()=>"unexpected"});
   try{await new ToolExecutor(registry,{permissions:{danger:"deny"}}).execute("danger",{});results.push({name:"denied tool call",passed:false,details:"tool executed"});}catch{results.push({name:"denied tool call",passed:true,details:"denied"});}
-  return [...results,...await multiAgentScenarios(),...await adaptiveScenarios()];
+  return [...results,...await multiAgentScenarios(),...await adaptiveScenarios(),...await daemonScenarios()];
 }

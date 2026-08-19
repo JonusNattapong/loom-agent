@@ -14,6 +14,10 @@ import {PlanEngine,Reviewer,TaskExecutor,VerifiedExecutionRuntime} from "@loom/p
 type Config={
   provider?:string;model?:string;context?:{maxChars?:number};permissions?:Record<string,PermissionLevel>;
   agents?:{maxConcurrent?:number;roles?:Record<string,{model?:string}>};
+  planning?:{enabled?:boolean;maxTasks?:number;maxDepth?:number};
+  execution?:{maxModelRoundsPerTask?:number;maxToolCallsPerTask?:number};
+  review?:{enabled?:boolean;maxRepairRounds?:number};
+  verification?:{targetedTests?:boolean;final?:"targeted"|"package"|"full"};
   mcpServers?:Record<string,{command:string;args?:string[];env?:Record<string,string>}>;
 };
 

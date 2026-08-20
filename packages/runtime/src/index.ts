@@ -49,7 +49,7 @@ export class SelfGrowthEngine {
 }
 
 export type SelfCapability=
-  | "growth"|"memory"|"feedback"|"tool"|"planning"|"routing"
+  | "growth"|"memory"|"feedback"|"tool"|"design"|"planning"|"routing"
   | "evaluation"|"review"|"testing"|"correction"|"recovery"
   | "monitoring"|"governance"|"security"|"documentation"|"optimization";
 
@@ -97,6 +97,14 @@ export class SelfRouter {
 }
 
 export type SelfPlanStep={id:string;title:string;dependsOn?:string[];status:"pending"|"completed"};
+export type SelfDesign={goal:string;approach:string;components:string[];assumptions:string[];tradeoffs:string[];acceptanceCriteria:string[]};
+export class SelfDesigner {
+ constructor(private readonly runtime:SelfRuntime){}
+ propose(goal:string,context:string[]=[]):SelfDesign{
+  const approach=this.runtime.isEnabled("design")?"Inspect existing boundaries, preserve public contracts, implement the smallest reversible change":"Use the existing runtime path";
+  return {goal,approach,components:context.length?context:["runtime","state","provider","tests"],assumptions:["existing public APIs remain compatible","changes require verification"],tradeoffs:["smaller changes reduce risk but may defer optimization","approval adds latency but protects user data"],acceptanceCriteria:["behavior is covered by tests","policy and error paths are explicit","no secrets are persisted"]};
+ }
+}
 export class SelfPlanner {
  constructor(private readonly runtime:SelfRuntime){}
  create(goal:string):SelfPlanStep[]{

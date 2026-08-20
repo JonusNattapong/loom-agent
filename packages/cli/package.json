@@ -1,27 +1,38 @@
 {
-  "name": "@loom/cli",
-  "version": "1.0.0",
-  "type": "module",
   "bin": {
     "loom": "dist/index.js"
   },
-  "main": "dist/index.js",
   "dependencies": {
-    "@loom/coordinator": "1.0.0",
-    "@loom/core": "1.0.0",
-    "@loom/mcp": "1.0.0",
-    "@loom/planner": "1.0.0",
-    "@loom/providers": "1.0.0",
-    "@loom/runtime": "1.0.0",
-    "@loom/skills": "1.0.0",
-    "@loom/state": "1.0.0",
-    "@loom/tools": "1.0.0",
-    "@loom/daemon": "file:../daemon",
-    "@loom/control": "file:../control",
-    "@loom/remote": "file:../remote"
+    "@loom/control": "^1.1.0",
+    "@loom/coordinator": "^1.1.0",
+    "@loom/core": "^1.1.0",
+    "@loom/daemon": "^1.1.0",
+    "@loom/mcp": "^1.1.0",
+    "@loom/planner": "^1.1.0",
+    "@loom/providers": "^1.1.0",
+    "@loom/remote": "^1.1.0",
+    "@loom/runtime": "^1.1.0",
+    "@loom/skills": "^1.1.0",
+    "@loom/state": "^1.1.0",
+    "@loom/tools": "^1.1.0"
+  },
+  "engines": {
+    "node": ">=22"
   },
   "files": [
     "dist",
     "README.md"
-  ]
+  ],
+  "license": "MIT",
+  "main": "dist/index.js",
+  "name": "@loom/cli",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JonusNattapong/loom-agent.git"
+  },
+  "type": "module",
+  "version": "1.1.0"
 }

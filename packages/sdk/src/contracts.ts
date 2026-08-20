@@ -30,7 +30,7 @@ import type {
 export type {AgentRole, Message, Provider, ProviderRequest, ProviderResponse, ToolDefinition, Tool, PermissionLevel, MemoryScope, Visibility} from "@loom/core";
 
 /** @stable SDK version tuple. Bump the minor for new stable additions. */
-export const SDK_API_VERSION = "1.0.0" as const;
+export const SDK_API_VERSION = "1.1.0" as const;
 
 /** Loom protocol major version. Workers with an incompatible major are rejected. */
 export const PROTOCOL_MAJOR = 1 as const;

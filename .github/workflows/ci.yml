@@ -8,10 +8,12 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        node-version: [22.x]
+        os: [ubuntu-latest, windows-latest]
+        node-version: [22.x, 24.x]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.node-version }}
@@ -28,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [22.x]
+        node-version: [22.x, 24.x]
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.node-version }}
@@ -39,6 +41,22 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm run eval
+
+  package-smoke:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: "npm"
+      - run: npm ci
+      - run: npm run build
+      - run: npm run check:packages
+      - run: npm pack --dry-run --workspace @loom/sdk --json
+      - run: npm pack --dry-run --workspace @loom/cli --json
 
   # Optional: Discord smoke test (requires DISCORD_BOT_TOKEN secret)
   # discord-smoke:

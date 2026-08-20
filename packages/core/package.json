@@ -1,11 +1,22 @@
 {
-  "name": "@loom/core",
-  "version": "1.0.0",
-  "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "engines": {
+    "node": ">=22"
+  },
   "files": [
     "dist",
     "README.md"
-  ]
+  ],
+  "license": "MIT",
+  "main": "dist/index.js",
+  "name": "@loom/core",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JonusNattapong/loom-agent.git"
+  },
+  "type": "module",
+  "types": "dist/index.d.ts",
+  "version": "1.1.0"
 }

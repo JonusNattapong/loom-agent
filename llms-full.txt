@@ -1,12 +1,14 @@
-# Loom Agent V0.4 — Full Agent Context
+# Loom Agent V1.1 — Full Agent Context
 
 > Use this file to orient a coding agent before modifying Loom. Source code and tests remain authoritative.
 
 ## Purpose and scope
 
-Loom is a CLI-first **local durable multi-agent runtime** for developer work. V0.4 evolves the V0.3 verified task graph into a root planner plus bounded role-scoped child agents. It persists agent identity, delegation, messages, leases, structured results, artifacts, decisions, and recovery state in SQLite.
+Loom is a CLI-first **durable multi-agent runtime** for developer work. V1.1 exposes a public SDK and package graph while preserving persisted agent identity, delegation, messages, leases, structured results, artifacts, decisions, and recovery state in SQLite.
 
-Do not describe V0.4 as distributed. Remote workers, network A2A, Redis/Kafka, daemon scheduling, web/desktop UI, vector memory, embeddings, and cloud orchestration are out of scope.
+V1.1 supports a controller-oriented daemon, authenticated control plane, scheduler, and outbound remote workers. It is still not a distributed consensus or storage system; HA, mesh/P2P, NAT traversal, Redis/Kafka, vector memory, and cloud orchestration remain out of scope.
+
+The milestone-specific V0.4 sections below are retained as historical context. Prefer current package manifests, README, and tests when behavior differs.
 
 ## Requirements and checks
 

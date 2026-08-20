@@ -1,12 +1,14 @@
 ---
 title: Architecture
-version: 0.4
+version: 1.1
 category: explanation
 ---
 
 # Architecture
 
-Loom V0.4 adds a coordination layer around the V0.3 task graph. The existing single-agent `VerifiedExecutionRuntime` remains available for migrated agents and compatibility tests.
+Loom V1.1 composes the public SDK, CLI, adaptive planner, durable task graph,
+daemon, control plane, and remote-worker runtime around SQLite as the source of
+truth. Historical V0.x runtime paths remain available for compatibility tests.
 
 ```mermaid
 flowchart TD

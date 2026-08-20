@@ -20,7 +20,7 @@ import type {
   PermissionLevel,
 } from "@loom/core";
 import {StateStore} from "@loom/state";
-import {ToolRegistry, createNativeTools, type ToolPolicy} from "@loom/tools";
+import {ToolExecutor, ToolRegistry, createNativeTools, type ToolPolicy} from "@loom/tools";
 import {SkillRuntime} from "@loom/skills";
 import {MockProvider, OpenAICompatibleProvider} from "@loom/providers";
 
@@ -232,18 +232,18 @@ export class LoomApp {
     const agentId = this.agentDefs.get(options.agent ?? "main")?.id ?? options.agent ?? "main";
     const def = this.agentDefs.get(agentId);
     const provider = this.getProvider(def?.provider);
-    const loop = new AgentLoop(this.state, provider, this.registry, {
-      system: def?.system,
-      skills: this.skills,
-      selectedSkills: options.skills ?? def?.skills,
-      toolPolicy: this.buildToolPolicy(),
-      context: new ContextCompiler(),
-      maxChars: 8000,
-    });
     const agent = this.state.createAgentRecord({
       goal: options.goal,
       role: def?.role ?? "planner",
       rootAgentId: agentId,
+    });
+    const loop = new AgentLoop(this.state, provider, this.registry, {
+      system: def?.system,
+      skills: this.skills,
+      selectedSkills: options.skills ?? def?.skills,
+      toolPolicy: this.buildToolPolicy(agent.id, def?.tools),
+      context: new ContextCompiler(),
+      maxChars: 8000,
     });
     this.emitEvent({eventVersion: 1, type: "agent.started", agentId: agent.id, role: def?.role, goal: options.goal, at: Date.now()});
     try {
@@ -266,7 +266,15 @@ export class LoomApp {
         const payload = typeof job.payload === "string" ? JSON.parse(job.payload) : job.payload;
         const root = job.rootAgentId ?? this.state.createAgentRecord({goal: payload.goal, role: "planner"}).id;
         if (!job.rootAgentId) this.state.updateJob(job.id, "claimed", {rootAgentId: root});
-        const plan = await new AdaptiveOrchestrator(this.state, this.provider).run(root, payload.goal);
+        const toolExecutor = new ToolExecutor(this.registry, this.buildToolPolicy(root));
+        const plan = await new AdaptiveOrchestrator(this.state, this.provider, {
+          tools: this.registry.definitions(),
+          tool: (call, agentId, taskId) => toolExecutor.execute(call.name, call.input, {
+            agentId,
+            taskId,
+            toolCallId: call.id ?? `${taskId}:${call.name}`,
+          }),
+        }).run(root, payload.goal);
         const agent = this.state.getAgent(root);
         if (agent?.status === "completed") return {status: "completed", rootAgentId: root, summary: agent.result};
         if (agent?.status === "waiting") return {status: "waiting", rootAgentId: root, waitingReason: "approval"};
@@ -318,13 +326,29 @@ export class LoomApp {
     return {sdk: SDK_API_VERSION, protocol: PROTOCOL_MAJOR, schema: SCHEMA_VERSION};
   }
 
-  private buildToolPolicy(): ToolPolicy {
+  private buildToolPolicy(agentId?: string, allowedTools?: string[]): ToolPolicy {
     const permissions: Record<string, PermissionLevel> = {...(this.policy.tools ?? {})};
     for (const [name, tool] of this.sdkTools) {
       if (tool.permissions) permissions[name] = tool.permissions;
       else if (tool.approval) permissions[name] = "ask";
     }
-    return {permissions, allowAsk: true, maxResultChars: 20000};
+    if (allowedTools) {
+      const allowed = new Set(allowedTools);
+      for (const definition of this.registry.definitions()) {
+        if (!allowed.has(definition.name)) permissions[definition.name] = "deny";
+      }
+    }
+    return {
+      permissions,
+      allowAsk: false,
+      maxResultChars: 20000,
+      ledger: this.state,
+      approvals: this.state,
+      artifacts: this.state,
+      trace: (type, data) => {
+        if (agentId) this.state.addTrace(agentId, type, data);
+      },
+    };
   }
 
   private emitEvent(event: LoomAppEvent): void {

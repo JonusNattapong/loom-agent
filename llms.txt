@@ -1,6 +1,10 @@
 # Loom Agent
 
-> Loom Agent V0.4 is a TypeScript, CLI-first, local durable multi-agent runtime with persisted task graphs, parent-child delegation, task leases, an internal A2A bus, isolated context and memory, result handoff, approvals, verified execution, and SQLite recovery.
+> Loom Agent V1.1 is a TypeScript, CLI-first, durable multi-agent runtime with a public SDK, persisted task graphs, parent-child delegation, approvals, verified execution, a control plane, remote workers, and SQLite recovery.
+
+The current release focus is reliable distribution and unified execution. CLI, SDK, daemon, and bot paths should share the same tool policy, tracing, checkpoint, and recovery guarantees.
+
+The milestone-specific V0.4 descriptions below are historical implementation context; current source, package manifests, and tests are authoritative.
 
 ## Setup
 

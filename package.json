@@ -1,7 +1,7 @@
 {
   "name": "loom",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A local durable multi-agent harness with task graphs and verified execution.",
   "workspaces": [
     "packages/*",
@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "eval": "tsx packages/evals/src/cli.ts",
+    "check:packages": "node scripts/check-package-graph.mjs",
     "loom": "tsx packages/cli/src/index.ts",
     "test:web": "npm -w @loom/web test"
   },

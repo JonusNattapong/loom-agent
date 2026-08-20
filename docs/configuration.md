@@ -1,6 +1,6 @@
 ---
 title: Configuration
-version: 0.4
+version: 1.1
 category: how-to
 ---
 
@@ -31,7 +31,9 @@ For provider and model selection:
 environment variables > .loom/config.json > defaults
 ```
 
-V0.4 does not provide `--provider` or `--model` CLI flags.
+Provider and model can be selected through the versioned config schema or the
+`LOOM_PROVIDER` / `LOOM_MODEL` environment variables. The public SDK also
+accepts provider registrations and per-agent provider IDs.
 
 ## Environment variables
 
@@ -47,11 +49,14 @@ Do not commit `.loom/config.json` if it contains machine-specific commands or en
 
 ## Context budget
 
-`context.maxChars` limits each isolated child context and the V0.2-compatible `AgentLoop` context.
+`context.maxChars` limits each isolated child context and the embedded SDK
+`AgentLoop` context.
 
 ## Agent concurrency
 
-`agents.maxConcurrent` bounds child execution and defaults to 2. `--max-agents` overrides it for one command. V0.4 does not start remote workers or background processes.
+`agents.maxConcurrent` bounds child execution and defaults to 2. `--max-agents`
+overrides it for one command. The daemon and SDK `start()` path use the same
+durable job and execution state.
 
 ## Permission values
 

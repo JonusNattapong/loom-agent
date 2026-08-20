@@ -1,6 +1,6 @@
 ---
 title: Providers
-version: 0.4
+version: 1.1
 category: how-to
 ---
 
@@ -30,6 +30,6 @@ LOOM_PROVIDER=openai OPENAI_API_KEY=... LOOM_MODEL=gpt-4o-mini \
 
 Set `OPENAI_BASE_URL` for another service implementing the OpenAI Chat Completions shape.
 
-The adapter normalizes assistant content, function tool calls, usage, finish reason, request id, and model metadata. V0.4 remains non-streaming and supports one provider tool-execution round followed by one final provider call. Children share the configured provider/model by default.
+The adapter normalizes assistant content, function tool calls, usage, finish reason, request id, and model metadata. The provider remains non-streaming, while adaptive execution supports bounded multi-round tool calls with durable checkpoints. Explicit provider registration is recommended when applications need different models per agent.
 
 Normal tests never require network access or credentials. Do not print, trace, or persist provider keys.

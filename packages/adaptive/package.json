@@ -1,13 +1,23 @@
 {
-  "name": "@loom/adaptive",
-  "version": "1.0.0",
-  "private": true,
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "dependencies": {
-    "@loom/core": "1.0.0",
-    "@loom/state": "1.0.0",
-    "@loom/planner": "1.0.0"
+    "@loom/core": "^1.1.0",
+    "@loom/planner": "^1.1.0",
+    "@loom/state": "^1.1.0"
   },
-  "devDependencies": {}
+  "devDependencies": {},
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT",
+  "main": "dist/index.js",
+  "name": "@loom/adaptive",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JonusNattapong/loom-agent.git"
+  },
+  "types": "dist/index.d.ts",
+  "version": "1.1.0"
 }

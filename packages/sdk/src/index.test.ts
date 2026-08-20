@@ -11,7 +11,7 @@ import type {LoomEvent} from "./contracts.js";
 
 describe("@loom/sdk public contracts", () => {
   it("exposes a stable SDK API version", () => {
-    expect(SDK_API_VERSION).toBe("1.0.0");
+    expect(SDK_API_VERSION).toBe("1.1.0");
   });
 
   it("defineAgent rejects empty id", () => {

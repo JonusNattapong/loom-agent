@@ -4,6 +4,21 @@ All notable changes to Loom are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and Loom adheres to its own
 public/experimental/internal API tiers (see `docs/versioning.md`).
 
+## [1.1.0] — Unreleased
+
+### Added
+
+- Cross-platform process recovery coverage for Windows and POSIX hosts.
+- Ubuntu and Windows CI coverage on Node 22 and Node 24.
+- Publish metadata and a coordinated `1.1.0` package graph.
+- Unified adaptive tool definitions for CLI and SDK daemon execution.
+
+### Changed
+
+- Remote process fixtures use portable `file:` URLs and stdin control messages.
+- SDK daemon jobs route tool calls through durable permissions, approvals,
+  idempotency, tracing, and artifact recording.
+
 ## [1.0.0] — V1.0 Unified Agent Platform
 
 **Stabilization / productization / public-contract / developer-experience

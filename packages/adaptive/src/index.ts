@@ -67,7 +67,7 @@ export interface TestSelectionInput {changedFiles:string[];knownTestFiles:string
 export interface TestSelection {level:"targeted"|"package"|"full";files:string[];reason:string}
 export function selectTests(input:TestSelectionInput):TestSelection {const files=input.knownTestFiles.filter(t=>input.changedFiles.some(f=>{const base=f.replace(/\.(ts|tsx|js|jsx)$/,""),test=t.replace(/\.(test|spec)?\.(ts|tsx|js|jsx)$/g,"");return test.includes(base)||base.includes(test)}));return {level:files.length?"targeted":"full",files,reason:files.length?"matched changed paths to test paths":"no deterministic test match"};}
 
-export interface AdaptiveOrchestratorOptions extends PlannerOptions { maxModelRounds?:number; maxToolCalls?:number; maxRepairRounds?:number; afterExecutionCheckpoint?:()=>void|Promise<void>; tool?: (call:ToolCall, agentId:string, taskId:string)=>Promise<string>; reviewer?: (input:ReviewInput,round:number)=>Promise<ReviewResult>; }
+export interface AdaptiveOrchestratorOptions extends PlannerOptions { maxModelRounds?:number; maxToolCalls?:number; maxRepairRounds?:number; afterExecutionCheckpoint?:()=>void|Promise<void>; tools?:unknown[]; tool?: (call:ToolCall, agentId:string, taskId:string)=>Promise<string>; reviewer?: (input:ReviewInput,round:number)=>Promise<ReviewResult>; }
 export class AdaptiveOrchestrator {
  constructor(private readonly state:StateStore,private readonly provider:Provider,private readonly options:AdaptiveOrchestratorOptions={}){}
  async run(agentId:string,goal:string){
@@ -87,7 +87,7 @@ export class AdaptiveOrchestrator {
   for(const task of this.state.listPlanTasks(plan.id)) if(task.status==="running") this.state.updatePlanTask(task.id,"ready",{blockedReason:"recovered after process restart"});
   const executor={execute:async (task:PlanTask,ctx:{agentId:string;goal:string})=>{
    const roundsBefore=this.state.listExecutionRounds(task.id).length;
-   const result=await new MultiRoundExecutor(this.provider,{tool:call=>this.options.tool?this.options.tool(call,ctx.agentId,task.id):Promise.resolve("tool execution unavailable"),checkpoint:async snapshot=>{this.state.recordExecutionRound({rootAgentId:ctx.agentId,taskId:task.id,round:roundsBefore+snapshot.round,status:"checkpointed",messages:snapshot.messages});await this.options.afterExecutionCheckpoint?.();},trace:(type,data)=>this.state.addTrace(ctx.agentId,type,{...data,taskId:task.id})},{maxModelRounds:this.options.maxModelRounds,maxToolCalls:this.options.maxToolCalls}).run({taskId:task.id,goal:ctx.goal,messages:[{role:"user",content:task.title+"\n"+ctx.goal}]});
+   const result=await new MultiRoundExecutor(this.provider,{tool:call=>this.options.tool?this.options.tool(call,ctx.agentId,task.id):Promise.resolve("tool execution unavailable"),checkpoint:async snapshot=>{this.state.recordExecutionRound({rootAgentId:ctx.agentId,taskId:task.id,round:roundsBefore+snapshot.round,status:"checkpointed",messages:snapshot.messages});await this.options.afterExecutionCheckpoint?.();},trace:(type,data)=>this.state.addTrace(ctx.agentId,type,{...data,taskId:task.id})},{maxModelRounds:this.options.maxModelRounds,maxToolCalls:this.options.maxToolCalls}).run({taskId:task.id,goal:ctx.goal,messages:[{role:"user",content:task.title+"\n"+ctx.goal}],tools:this.options.tools});
    if(result.status!=="completed")throw Object.assign(new Error(result.summary),{failurePolicy:"needs_human"});
    return {result:result.summary};
   }};

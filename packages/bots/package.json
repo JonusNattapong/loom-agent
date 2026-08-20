@@ -1,19 +1,29 @@
 {
-  "name": "@loom/bots",
+  "dependencies": {
+    "@loom/adaptive": "^1.1.0",
+    "@loom/core": "^1.1.0",
+    "@loom/state": "^1.1.0",
+    "discord.js": "^14.27.0"
+  },
   "description": "Bot runtime and event gateway",
-  "private": true,
-  "version": "1.0.0",
+  "devDependencies": {},
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT",
   "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "name": "@loom/bots",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JonusNattapong/loom-agent.git"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run"
   },
-  "dependencies": {
-    "discord.js": "^14.27.0",
-    "@loom/adaptive": "file:../adaptive",
-    "@loom/core": "file:../core",
-    "@loom/state": "file:../state"
-  },
-  "devDependencies": {}
+  "types": "dist/index.d.ts",
+  "version": "1.1.0"
 }

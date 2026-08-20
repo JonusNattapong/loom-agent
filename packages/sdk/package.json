@@ -1,22 +1,27 @@
 {
-  "name": "@loom/sdk",
-  "version": "1.0.0",
+  "dependencies": {
+    "@loom/core": "^1.1.0",
+    "@loom/providers": "^1.1.0",
+    "@loom/skills": "^1.1.0",
+    "@loom/state": "^1.1.0",
+    "@loom/tools": "^1.1.0"
+  },
   "description": "Public developer SDK for the Loom agent platform: define agents, tools, skills, and run them locally or remotely through stable contracts.",
-  "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "engines": {
+    "node": ">=22"
+  },
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
     },
     "./client": {
-      "types": "./dist/client.d.ts",
-      "import": "./dist/client.js"
+      "import": "./dist/client.js",
+      "types": "./dist/client.d.ts"
     },
     "./contracts": {
-      "types": "./dist/contracts.d.ts",
-      "import": "./dist/contracts.js"
+      "import": "./dist/contracts.js",
+      "types": "./dist/contracts.d.ts"
     }
   },
   "files": [
@@ -24,57 +29,60 @@
     "README.md",
     "contracts.d.ts"
   ],
-  "engines": {
-    "node": ">=18.18.0"
-  },
-  "scripts": {
-    "build": "tsc -p tsconfig.json"
-  },
-  "dependencies": {
-    "@loom/core": "1.0.0",
-    "@loom/state": "1.0.0",
-    "@loom/tools": "1.0.0",
-    "@loom/skills": "1.0.0",
-    "@loom/providers": "1.0.0"
-  },
+  "license": "MIT",
+  "main": "dist/index.js",
+  "name": "@loom/sdk",
   "peerDependencies": {
-    "@loom/runtime": "1.0.0",
-    "@loom/coordinator": "1.0.0",
-    "@loom/adaptive": "1.0.0",
-    "@loom/context": "1.0.0",
-    "@loom/daemon": "1.0.0",
-    "@loom/control": "1.0.0",
-    "@loom/remote": "1.0.0",
-    "@loom/bots": "1.0.0",
-    "@loom/network": "1.0.0"
+    "@loom/adaptive": "^1.1.0",
+    "@loom/bots": "^1.1.0",
+    "@loom/context": "^1.1.0",
+    "@loom/control": "^1.1.0",
+    "@loom/coordinator": "^1.1.0",
+    "@loom/daemon": "^1.1.0",
+    "@loom/network": "^1.1.0",
+    "@loom/remote": "^1.1.0",
+    "@loom/runtime": "^1.1.0"
   },
   "peerDependenciesMeta": {
-    "@loom/runtime": {
-      "optional": true
-    },
-    "@loom/coordinator": {
-      "optional": true
-    },
     "@loom/adaptive": {
-      "optional": true
-    },
-    "@loom/context": {
-      "optional": true
-    },
-    "@loom/daemon": {
-      "optional": true
-    },
-    "@loom/control": {
-      "optional": true
-    },
-    "@loom/remote": {
       "optional": true
     },
     "@loom/bots": {
       "optional": true
     },
+    "@loom/context": {
+      "optional": true
+    },
+    "@loom/control": {
+      "optional": true
+    },
+    "@loom/coordinator": {
+      "optional": true
+    },
+    "@loom/daemon": {
+      "optional": true
+    },
     "@loom/network": {
       "optional": true
+    },
+    "@loom/remote": {
+      "optional": true
+    },
+    "@loom/runtime": {
+      "optional": true
     }
-  }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JonusNattapong/loom-agent.git"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "type": "module",
+  "types": "dist/index.d.ts",
+  "version": "1.1.0"
 }

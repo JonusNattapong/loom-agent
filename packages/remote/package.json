@@ -1,17 +1,28 @@
 {
-  "name": "@loom/remote",
-  "version": "1.0.0",
-  "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "dependencies": {
-    "@loom/state": "1.0.0",
-    "ws": "^8.21.3",
-    "@loom/tools": "1.0.0",
-    "@loom/network": "file:../network"
+    "@loom/network": "^1.1.0",
+    "@loom/state": "^1.1.0",
+    "@loom/tools": "^1.1.0",
+    "ws": "^8.21.3"
+  },
+  "engines": {
+    "node": ">=22"
   },
   "files": [
     "dist",
     "README.md"
-  ]
+  ],
+  "license": "MIT",
+  "main": "dist/index.js",
+  "name": "@loom/remote",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JonusNattapong/loom-agent.git"
+  },
+  "type": "module",
+  "types": "dist/index.d.ts",
+  "version": "1.1.0"
 }

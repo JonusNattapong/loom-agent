@@ -1,21 +1,21 @@
 # Loom Agent
 
-Loom is a CLI-first durable multi-agent runtime for developer tasks. **V0.9** adds an authenticated operator control plane and web UI, a versioned JSON/SSE API, stable `loom://` resource identities, and an inspectable route model on top of the existing planning, approvals, daemon, scheduler, and remote-worker runtime.
+Loom is a CLI-first durable multi-agent runtime for developer tasks. **V1.1** makes the public package surface installable, aligns foreground and daemon execution, and hardens cross-platform recovery on top of the durable planner, approvals, scheduler, control plane, and remote-worker runtime.
 
-> Milestone: **Loom Agent V0.9 — Operator Control Plane & Logical Addressing**
+> Milestone: **Loom Agent V1.1 — Reliable Distribution & Unified Execution**
 
-Loom remains a controller-oriented runtime backed by local SQLite. V0.9 does not provide NAT traversal, P2P transport, a VPN, relay transport, a mesh, consensus, or distributed storage.
+Loom remains a controller-oriented runtime backed by local SQLite. V1.1 does not provide NAT traversal, P2P transport, a VPN, relay transport, a mesh, consensus, or distributed storage.
 
 ## Requirements
 
 - Node.js 22 or newer
-- Bun 1.x for installation and development
+- npm 10+ (Bun 1.x also works for development)
 - Git for repository inspection and diff review
 
 ## Quick start
 
 ```bash
-bun install
+npm ci
 npm run build
 npm run loom -- operator token create --name local-admin
 npm run loom -- daemon start
@@ -56,13 +56,15 @@ LOOM_WORKER_TOKEN=... loom worker start --id worker-dev   --controller ws://127.
 
 Use `wss://` for remote deployments. Controller and worker policies intersect; a controller cannot grant a tool denied locally. Loom does not synchronize files. A connected worker has a transient controller-WebSocket route associated with its stable `loom://worker/<id>` identity.
 
-## V0.9 documentation
+## Current documentation
 
 - [Control plane and secure deployment](docs/control-plane.md)
 - [Control API and SSE](docs/control-api.md)
 - [Operator authentication](docs/operator-auth.md)
 - [`loom://` addressing](docs/loom-addressing.md)
 - [Route model](docs/routes.md)
+- [Versioning and compatibility](docs/versioning.md)
+- [V1.1 release scope](docs/v1.1-planning.md)
 
 ## Other documentation
 

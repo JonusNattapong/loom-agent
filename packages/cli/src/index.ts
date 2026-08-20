@@ -75,7 +75,7 @@ async function doctor():Promise<DoctorReport>{
   try{const probe=new StateStore();dbOk=probe.getSchemaVersion()>=0;dbDetail=`schema ${probe.getSchemaVersion()}`;probe.close();}catch(error){dbDetail=String(error instanceof Error?error.message:error);}
   push("Database access", dbOk, dbDetail);
   // Migration status
-  try{const probe=new StateStore();push("Migration applied", probe.getSchemaVersion()===SCHEMA_VERSION, `schema ${probe.getSchemaVersion()} / expected ${SCHEMA_VERSION}`);probe.close();}catch{/* db check already covers */} 
+  try{const probe=new StateStore();push("Migration applied", probe.getSchemaVersion()===SCHEMA_VERSION, `schema ${probe.getSchemaVersion()} / expected ${SCHEMA_VERSION}`);probe.close();}catch{/* db check already covers */}
   // Config validity
   try{const {config,source}=await loadLoomConfig({cwd:process.cwd()});const issues=validateConfig(config).filter(i=>i.severity==="error");push("Config valid", issues.length===0, issues.length?`${issues.length} error(s) in ${source}`:source);}catch(error){push("Config valid", false, String(error instanceof Error?error.message:error));}
   // Provider configuration (never print keys)

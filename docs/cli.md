@@ -40,7 +40,8 @@ During development, invoke the CLI as `npm run loom -- <command>`. After linking
 | `memory <agent-id>` | List memory visible to that agent. |
 | `memory set <agent-id> <key> <value>` | Upsert a memory entry. |
 | `memory delete <agent-id> <key>` | Delete a memory entry. |
-| `config` | Print effective project config plus environment-selected provider/model. || `init [name]` | Scaffold a `.loom/config.json` (V1 schema) in the current directory. |
+| `config` | Print effective project config plus environment-selected provider/model. |
+| `init [name]` | Scaffold a `.loom/config.json` (V1 schema) in the current directory. |
 | `doctor [--json]` | Diagnose Node version, database access, migration, config validity, provider, control-plane, and remote-worker configuration. |
 | `version` / `--version` | Print Loom, SDK, protocol, schema, and Node versions. |
 | `config validate` | Validate `.loom/config.json` against the V1 schema and print errors with JSON-pointer-style paths. |

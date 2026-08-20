@@ -86,3 +86,21 @@ export class SelfToolGuard {
   return {tool,allowed:!requiresApproval||approved,requiresApproval,reason:requiresApproval&&!approved?"approval required":"policy allows tool"};
  }
 }
+
+export type SelfRouteCandidate={id:string;capabilities:string[];cost?:number;latencyMs?:number;available?:boolean};
+export class SelfRouter {
+ constructor(private readonly runtime:SelfRuntime){}
+ choose(candidates:SelfRouteCandidate[],required:string[]):SelfRouteCandidate|undefined{
+  if(!this.runtime.isEnabled("routing"))return candidates.find(candidate=>candidate.available!==false);
+  return candidates.filter(candidate=>candidate.available!==false&&required.every(item=>candidate.capabilities.includes(item))).sort((a,b)=>(a.cost??0)-(b.cost??0)||(a.latencyMs??0)-(b.latencyMs??0))[0];
+ }
+}
+
+export type SelfPlanStep={id:string;title:string;dependsOn?:string[];status:"pending"|"completed"};
+export class SelfPlanner {
+ constructor(private readonly runtime:SelfRuntime){}
+ create(goal:string):SelfPlanStep[]{
+  if(!this.runtime.isEnabled("planning"))return [{id:"task",title:goal,status:"pending"}];
+  return [{id:"understand",title:`Understand: ${goal}`,status:"pending"},{id:"execute",title:`Execute: ${goal}`,dependsOn:["understand"],status:"pending"},{id:"verify",title:`Verify: ${goal}`,dependsOn:["execute"],status:"pending"}];
+ }
+}

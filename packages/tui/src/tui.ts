@@ -822,6 +822,21 @@ export class TUI extends Container {
 	}
 
 	private handleInput(data: string): void {
+		// A capturing modal owns the terminal input stream. Route directly to it
+		// before global listeners (session shortcuts) so text and Ctrl+C cannot
+		// leak into the editor behind the overlay.
+		const capturingOverlay = this.getTopmostVisibleOverlay();
+		if (capturingOverlay) {
+			if (this.focusedComponent !== capturingOverlay.component) {
+				this.setFocus(capturingOverlay.component);
+			}
+			if (capturingOverlay.component.handleInput) {
+				capturingOverlay.component.handleInput(data);
+				this.requestRender();
+			}
+			return;
+		}
+
 		if (this.inputListeners.size > 0) {
 			let current = data;
 			for (const listener of this.inputListeners) {

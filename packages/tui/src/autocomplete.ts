@@ -430,14 +430,17 @@ export class CombinedAutocompleteProvider implements AutocompleteProvider {
 		if (isSlashCommand) {
 			const hasSeparatorAfterCursor = /^[ \t]/.test(adjustedAfterCursor);
 			const separator = hasSeparatorAfterCursor ? "" : " ";
-			const newLine = `${beforePrefix}/${item.value}${separator}${adjustedAfterCursor}`;
+			// Command values already contain their leading slash (for example `/help`).
+			// Adding another one turns a normal selection into the broken `//help`.
+			const commandValue = item.value.startsWith("/") ? item.value : `/${item.value}`;
+			const newLine = `${beforePrefix}${commandValue}${separator}${adjustedAfterCursor}`;
 			const newLines = [...lines];
 			newLines[cursorLine] = newLine;
 
 			return {
 				lines: newLines,
 				cursorLine,
-				cursorCol: beforePrefix.length + item.value.length + 2,
+				cursorCol: beforePrefix.length + commandValue.length + separator.length,
 			};
 		}
 

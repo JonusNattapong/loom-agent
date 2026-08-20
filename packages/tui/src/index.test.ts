@@ -17,6 +17,7 @@ import {
   SettingsMultiTabDialog,
   OAuthLoginDialog,
   ApiKeyPromptDialog,
+  CombinedAutocompleteProvider,
   defaultSelectListTheme,
   defaultMarkdownTheme,
 } from "./index.js";
@@ -189,6 +190,22 @@ describe("@loom-agent/tui", () => {
     expect(text).toContain("/statusline");
   });
 
+  it("applies slash command completions without duplicating the slash", () => {
+    const provider = new CombinedAutocompleteProvider(
+      [{ name: "/help", description: "Show help" }],
+      process.cwd(),
+    );
+    const result = provider.applyCompletion(
+      ["/he"],
+      0,
+      3,
+      { value: "/help", label: "/help" },
+      "/he",
+    );
+    expect(result.lines[0]).toBe("/help ");
+    expect(result.cursorCol).toBe(6);
+  });
+
   it("renders SettingsMultiTabDialog across tabs", () => {
     const dialog = new SettingsMultiTabDialog({
       initialTab: "providers",
@@ -229,7 +246,6 @@ describe("@loom-agent/tui", () => {
     expect(lines.join("\n")).toContain("console.anthropic.com");
   });
 });
-
 
 
 

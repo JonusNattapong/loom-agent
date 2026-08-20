@@ -1,5 +1,6 @@
 import {describe,it,expect} from "vitest";
-import {AgentLoop} from "./index.js";
+import {AgentLoop,SelfGrowthEngine,SelfRuntime,SelfRecovery,SelfSecurity} from "./index.js";
 import {StateStore} from "@loom-agent/state";
 import {MockProvider} from "@loom-agent/providers";
 describe("AgentLoop",()=>{it("runs and resumes a durable agent",async()=>{const s=new StateStore(":memory:");const loop=new AgentLoop(s,new MockProvider());const a=await loop.run("ship it");expect(a.status).toBe("completed");expect(s.getCheckpoint(a.id)?.result).toContain("ship it");const resumed=await loop.resume(a.id);expect(resumed.status).toBe("completed");expect(s.getTrace(a.id).some(x=>x.type==="agent.started")).toBe(true);});});
+describe("self runtime",()=>{it("requires approval before learning is persisted",()=>{const s=new StateStore(":memory:");const agent=s.createAgent("preferences");const growth=new SelfGrowthEngine(s);growth.enable();const suggestion=growth.observe({agentId:agent.id,input:"I prefer concise answers",source:"user"})!;expect(growth.listPending()).toHaveLength(1);expect(s.listMemory(agent.id)).toHaveLength(0);growth.approve(suggestion.id,agent.id);expect(s.listMemory(agent.id)[0]?.value).toBe("concise answers");});it("classifies transient recovery and redacts secrets",()=>{const runtime=new SelfRuntime();expect(new SelfRecovery(runtime).decide(new Error("timeout"),0).retry).toBe(true);expect(new SelfSecurity(runtime).redact("token=abc")).toBe("[REDACTED]");});});

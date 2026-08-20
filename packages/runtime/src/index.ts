@@ -175,3 +175,14 @@ export class SelfOptimizer {
   const pressure=input.failures>0||input.toolCalls>20;return pressure?{maxChars:Math.max(2000,Math.floor(input.contextChars*.8)),maxToolCalls:Math.max(4,Math.floor(input.toolCalls*.75)),reason:"reduced limits after execution pressure"}:{reason:"current limits are healthy"};
  }
 }
+
+export type SelfDecision={agentId:string;decision:string;reason:string;createdAt:string};
+export class SelfDocumenter {
+ private readonly decisions:SelfDecision[]=[];
+ constructor(private readonly runtime:SelfRuntime){}
+ record(agentId:string,decision:string,reason:string):SelfDecision|undefined{
+  if(!this.runtime.isEnabled("documentation"))return undefined;
+  const entry={agentId,decision,reason,createdAt:new Date().toISOString()};this.decisions.push(entry);return entry;
+ }
+ list(agentId?:string){return agentId?this.decisions.filter(item=>item.agentId===agentId):[...this.decisions];}
+}

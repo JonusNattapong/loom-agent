@@ -1,0 +1,13 @@
+import {describe,expect,it} from "vitest";
+import {mkdtempSync,writeFileSync,existsSync,readFileSync,mkdirSync} from "node:fs";
+import {tmpdir} from "node:os";
+import {join,resolve} from "node:path";
+import {spawn,ChildProcessWithoutNullStreams} from "node:child_process";
+import {StateStore} from "@loom/state";
+import {RemoteControllerService,hashWorkerToken} from "./index.js";
+
+const waitFor=(check:()=>boolean,timeout=10000)=>new Promise<void>((resolvePromise,reject)=>{const started=Date.now();const tick=()=>{if(check())return resolvePromise();if(Date.now()-started>timeout)return reject(new Error("process E2E timeout"));setTimeout(tick,25);};tick();});
+
+describe("remote worker process boundary",()=>{it("executes a real tool in a worker child process",async()=>{const dir=mkdtempSync(join(tmpdir(),"loom-process-")),workspace=join(dir,"workspace");mkdirSync(workspace);const db=join(dir,"controller.db"),token="process-secret",state=new StateStore(db),service=new RemoteControllerService(state,{host:"127.0.0.1",port:0,credentials:[{workerId:"child-worker",tokenHash:hashWorkerToken(token)}]});let child:any;try{await service.start();const port=service.address()!.port;const script=join(dir,"worker.mjs");const remoteDist=resolve(process.cwd(),"packages/remote/dist/index.js");writeFileSync(script,`import {RemoteWorkerRuntime} from ${JSON.stringify(remoteDist)};
+const runtime=new RemoteWorkerRuntime({url:${JSON.stringify(`ws://127.0.0.1:${port}/v1/workers/connect`)},token:process.env.LOOM_WORKER_TOKEN,workerId:"child-worker",workspaceRoot:${JSON.stringify(workspace)},stateFile:${JSON.stringify(join(dir,"worker.db"))},allowedTools:["write_file"]});
+await runtime.start();console.log("WORKER_READY");process.on("SIGTERM",()=>runtime.stop().then(()=>process.exit(0)));await new Promise(()=>{});`);child=spawn(process.execPath,[script],{env:{...process.env,LOOM_WORKER_TOKEN:token},stdio:["ignore","pipe","pipe"]});let output="";child.stdout.on("data",(chunk:Buffer)=>{output+=chunk.toString();});await waitFor(()=>output.includes("WORKER_READY"));await service.fabric.dispatchTool({jobId:"child-job",toolName:"write_file",toolInput:{path:"marker.txt",content:"one"},allowedTools:["write_file"]});await waitFor(()=>existsSync(join(workspace,"marker.txt")));await waitFor(()=>state.getRemoteAssignment("child-job")?.status==="completed");expect(readFileSync(join(workspace,"marker.txt"),"utf8")).toBe("one");expect(state.getRemoteAssignment("child-job")).toMatchObject({status:"completed"});}finally{if(child&&!child.killed)child.kill("SIGTERM");await new Promise(resolvePromise=>setTimeout(resolvePromise,100));await service.stop();state.close();}},30000);});

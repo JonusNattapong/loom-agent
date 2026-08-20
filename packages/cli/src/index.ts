@@ -24,7 +24,7 @@ type Config={
   verification?:{targetedTests?:boolean;final?:"targeted"|"package"|"full"};
   daemon?:{maxConcurrentJobs?:number;heartbeatIntervalMs?:number;staleAfterMs?:number;shutdownGraceMs?:number};jobs?:{leaseMs?:number;renewEveryMs?:number;maxAttempts?:number};scheduler?:{enabled?:boolean;maxSleepMs?:number};
   mcpServers?:Record<string,{command:string;args?:string[];env?:Record<string,string>}>;
-  worker?:{id?:string;controller?:string;tokenEnv?:string;capabilities?:string[];stateFile?:string};
+  worker?:{id?:string;controller?:string;tokenEnv?:string;capabilities?:string[];allowedTools?:string[];allowShell?:boolean;workspace?:string;workspaceId?:string;stateFile?:string};
   remote?:{enabled?:boolean;listen?:{host?:string;port?:number;path?:string};tokenEnv?:string;workerId?:string;trust?:"untrusted"|"trusted"|"approved";maxMessageBytes?:number;authTimeoutMs?:number};
 };
 
@@ -96,8 +96,8 @@ try{
     const value=(name:string)=>{const i=argv.indexOf(name);return i>=0?argv[i+1]:undefined;};
     const controller=value("--controller")??cfg.worker?.controller;if(!controller)throw new Error("worker controller is required");
     const tokenEnv=value("--token-env")??cfg.worker?.tokenEnv??"LOOM_WORKER_TOKEN";const token=process.env[tokenEnv];if(!token)throw new Error(`worker token environment variable is missing: ${tokenEnv}`);
-    const workerId=value("--id")??cfg.worker?.id??loadOrCreateWorkerId(cfg.worker?.stateFile??join(process.cwd(),".loom","worker.json"));
-    const runtime=new RemoteWorkerRuntime({url:controller,token,workerId,capabilities:cfg.worker?.capabilities??[],stateFile:cfg.worker?.stateFile});
+    const workerId=value("--id")??cfg.worker?.id??loadOrCreateWorkerId(cfg.worker?.stateFile??join(process.cwd(),".loom","worker.json"));const workspace=value("--workspace")??cfg.worker?.workspace;const capabilities=[...(cfg.worker?.capabilities??[]),...argv.flatMap((item,index)=>item==="--capability"&&argv[index+1]?[argv[index+1]]:[])];
+    const runtime=new RemoteWorkerRuntime({url:controller,token,workerId,capabilities,allowedTools:cfg.worker?.allowedTools??[],allowShell:cfg.worker?.allowShell===true,workspaceRoot:workspace,workspaceId:cfg.worker?.workspaceId,stateFile:cfg.worker?.stateFile});
     const stop=()=>{void runtime.stop().finally(()=>process.exit(0));};process.once("SIGINT",stop);process.once("SIGTERM",stop);await runtime.start();output(runtime.status(),`Worker ${workerId} connected to ${controller}`);await new Promise<void>(()=>{});
   }else if(command==="run"){
     const goal=args.join(" ");if(!goal)throw new Error("goal is required");const agent=state.createAgentRecord({goal,role:"planner"});state.addTrace(agent.id,"agent.created",{goal});const provider=loadProvider();const tools=await loadTools();const toolExecutor=new ToolExecutor(tools,{permissions:scopedPermissions(tools),ledger:state,approvals:state,artifacts:state,trace:(type,data)=>state.addTrace(agent.id,type,data)});const adaptive=new AdaptiveOrchestrator(state,provider,{maxModelRounds:12,maxToolCalls:30,provider,tool:(call,agentId,taskId)=>toolExecutor.execute(call.name,call.input,{agentId,taskId,toolCallId:call.id??`${taskId}:${call.name}`})});const result=await adaptive.run(agent.id,goal);const plan=state.getPlanForAgent(agent.id);output({agent:state.getAgent(agent.id),plan:result,tasks:plan?state.listPlanTasks(plan.id):[],agents:agentTree(agent.id),delegations:state.listDelegations(agent.id)},`Agent: ${agent.id}\nPlan: ${plan?.id??"none"}\nStatus: ${result.status}`);

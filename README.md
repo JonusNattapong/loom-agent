@@ -83,3 +83,14 @@ Loom now includes model-assisted planning, capability-aware deterministic routin
 ## V0.7 daemon and background runtime
 
 Loom V0.7 adds a durable local foreground daemon, SQLite-backed jobs and schedules, transactional occurrence dedupe, leases, bounded retries, restart recovery, and CLI inspection. Scheduled work enters the same adaptive orchestration pipeline as `loom run`; this is a restart-resumable local runtime, not a distributed scheduler or exactly-once network system. See `docs/daemon.md`, `docs/jobs.md`, `docs/scheduler.md`, and `docs/background-runtime.md`.
+
+## Remote worker execution (V0.8.1)
+
+Workers use an outbound WebSocket and a pre-provisioned local workspace. For local development:
+
+```bash
+loom worker token create
+LOOM_WORKER_TOKEN=... loom worker start --id worker-dev --controller ws://127.0.0.1:4778/v1/workers/connect
+```
+
+For remote deployments use `wss://`, keep tokens in environment variables, and configure worker-local `workspace` and `allowedTools`. Controller and worker policies intersect; the controller cannot grant a tool denied locally. Loom does not synchronize files or provide P2P/NAT traversal.

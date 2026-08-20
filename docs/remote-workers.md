@@ -19,3 +19,8 @@ V0.8 treats worker identity as durable and connections as temporary. A reconnect
 ```
 
 There is no worker-to-worker mesh, NAT traversal, or overlay network in V0.8.
+
+
+## Execution boundary
+
+Workers may be configured with a pre-provisioned `workspace`, `allowedTools`, and optional `workspaceId`. The controller sends logical workspace references and an allowed-tool scope; it does not send arbitrary filesystem paths or controller secrets. The worker runs the existing ToolExecutor with local policy intersection.

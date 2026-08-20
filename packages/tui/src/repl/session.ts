@@ -358,10 +358,11 @@ export class LoomReplSession {
       );
 
       // Render Assistant Output / Summary
+      const succeeded = planResult.status === "completed";
       this.appendMessage(
-        chalk.bold.green(`\n✔ Completed: `) + chalk.dim(`Agent [${agent.id}] status: ${planResult.status}`)
+        (succeeded ? chalk.bold.green(`\n✔ Completed: `) : chalk.bold.red(`\n✖ Failed: `)) + chalk.dim(`Agent [${agent.id}] status: ${planResult.status}`)
       );
-      this.notify("success", `Execution completed · ${planResult.status}`);
+      this.notify(succeeded ? "success" : "error", `Execution ${succeeded ? "completed" : "failed"} · ${planResult.status}`);
       this.historyContainer.addChild(new Spacer(1));
     } catch (error) {
       this.historyContainer.removeChild(loader);
@@ -633,6 +634,9 @@ export class LoomReplSession {
           this.tui.setFocus(this.editor);
           this.tui.requestRender();
           this.appendMessage(chalk.green(`✔ API key configured and saved for ${chalk.bold(providerName)}!`));
+          if (providerId.toLowerCase() !== this.options.provider.name.toLowerCase()) {
+            this.notify("warning", `Key saved for ${providerName}, but active provider is ${this.options.provider.name}. Select /provider to switch.`);
+          }
           resolve();
         },
         onCancel: () => {

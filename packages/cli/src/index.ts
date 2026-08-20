@@ -158,7 +158,9 @@ try{
   if(command==="repl"||command==="interactive"||command==="chat"){
     const provider=loadProvider();
     const tools=await loadTools();
-    const resolvedModel=process.env.LOOM_MODEL??(typeof cfg.provider==="object"?cfg.provider.model:undefined)??cfg.model??(process.env.ANTHROPIC_API_KEY?"claude-3-7-sonnet":(process.env.GEMINI_API_KEY??process.env.GOOGLE_API_KEY)?"gemini-2.5-flash":process.env.OPENAI_API_KEY?"gpt-4o":process.env.MISTRAL_API_KEY?"mistral-large":"unconfigured");
+    const providerId=(typeof cfg.provider==="string"?cfg.provider:cfg.provider?.id)??process.env.LOOM_PROVIDER??"";
+    const providerDefaultModel:Record<string,string>={anthropic:"claude-3-7-sonnet",claude:"claude-3-7-sonnet",google:"gemini-2.5-flash",gemini:"gemini-2.5-flash",openai:"gpt-4o",mistral:"mistral-large-latest",groq:"llama-3.3-70b-versatile",deepseek:"deepseek-chat",openrouter:"anthropic/claude-3.7-sonnet",opencode:"opencode"};
+    const resolvedModel=process.env.LOOM_MODEL??(typeof cfg.provider==="object"?cfg.provider.model:undefined)??cfg.model??providerDefaultModel[providerId.toLowerCase()]??(process.env.ANTHROPIC_API_KEY?"claude-3-7-sonnet":(process.env.GEMINI_API_KEY??process.env.GOOGLE_API_KEY)?"gemini-2.5-flash":process.env.OPENAI_API_KEY?"gpt-4o":process.env.MISTRAL_API_KEY?"mistral-large":"unconfigured");
     const session=new LoomReplSession({
       state,
       provider,

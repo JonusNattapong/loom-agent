@@ -25,6 +25,7 @@ import { DEFAULT_SLASH_COMMANDS, SlashAutocompleteView } from "./slash-autocompl
 import { SettingsMultiTabDialog, type SettingsTab } from "./settings-tab-dialog.js";
 import { OAuthLoginDialog } from "./oauth-dialog.js";
 import { ApiKeyPromptDialog } from "./api-key-dialog.js";
+import { computeRealCompanionStats, formatRealCompanionSummary } from "./companion-stats.js";
 import { createProvider, fetchAllConfiguredModels } from "@loom-agent/providers";
 
 export interface ReplSessionOptions {
@@ -68,8 +69,7 @@ export class LoomReplSession {
 
   constructor(private readonly options: ReplSessionOptions) {
     this.terminal = new ProcessTerminal();
-    const cwd = this.options.cwd ?? process.cwd();
-    this.terminal.setTitle(`Loom - ${cwd}`);
+    this.updateTitle();
     this.tui = new TUI(this.terminal);
     this.rootContainer = new Container();
     this.historyContainer = new Container();
@@ -114,14 +114,15 @@ export class LoomReplSession {
     this.rootContainer.addChild(this.statusBar);
     this.tui.setFocus(this.editor);
 
-    // Global Key Handling (Ctrl+C and Shift+Tab)
+    // Global Key Handling (Ctrl+C, Ctrl+D and Shift+Tab)
     this.tui.addInputListener((data) => {
-      if (matchesKey(data, "ctrl+c")) {
+      if (matchesKey(data, "ctrl+c") || data === "\x03" || matchesKey(data, "ctrl+d") || data === "\x04") {
         if (this.isExecuting) {
           this.appendMessage(chalk.bold.yellow("\n[Execution cancelled by user]"));
           this.isExecuting = false;
           this.tui.setFocus(this.editor);
           this.tui.requestRender();
+          return { consume: true };
         } else {
           this.stop();
           process.exit(0);
@@ -143,6 +144,13 @@ export class LoomReplSession {
       }
       return undefined;
     });
+
+    const onSignal = () => {
+      this.stop();
+      process.exit(0);
+    };
+    process.once("SIGINT", onSignal);
+    process.once("SIGTERM", onSignal);
   }
 
   private updateStatusBar(): void {
@@ -165,7 +173,6 @@ export class LoomReplSession {
 
   private renderWelcome(): void {
     const effectiveModel = resolveDisplayModel(this.options.provider, this.options.modelName);
-
     const providerName = this.options.provider.name;
 
     const welcomeCard = new LoomWelcomeCard({
@@ -179,6 +186,14 @@ export class LoomReplSession {
 
     this.historyContainer.addChild(welcomeCard);
     this.historyContainer.addChild(new Spacer(1));
+
+    void computeRealCompanionStats(this.options.state, this.options.cwd)
+      .then((realStats) => {
+        const summary = formatRealCompanionSummary(realStats);
+        welcomeCard.updateCompanionStats(summary);
+        this.tui.requestRender();
+      })
+      .catch(() => {});
   }
 
   private appendMessage(content: string): void {
@@ -186,10 +201,19 @@ export class LoomReplSession {
     this.tui.requestRender();
   }
 
-  private notify(level: "info" | "success" | "warning" | "error", message: string): void {
+  private notify(level: "info" | "success" | "warning" | "error", message: string, autoDismissMs = 3500): void {
     const colors = { info: chalk.cyan, success: chalk.green, warning: chalk.yellow, error: chalk.red };
     const labels = { info: "INFO", success: "OK", warning: "WARN", error: "ERROR" };
-    this.appendMessage(`${colors[level](`[${labels[level]}]`)} ${message}`);
+    const notification = new Text(`${colors[level](`[${labels[level]}]`)} ${message}`);
+    this.historyContainer.addChild(notification);
+    this.tui.requestRender();
+
+    if (autoDismissMs > 0) {
+      setTimeout(() => {
+        this.historyContainer.removeChild(notification);
+        this.tui.requestRender();
+      }, autoDismissMs).unref?.();
+    }
   }
 
   private appendMarkdown(markdownText: string): void {
@@ -197,9 +221,15 @@ export class LoomReplSession {
     this.tui.requestRender();
   }
 
+  public updateTitle(cwd?: string): void {
+    const targetCwd = cwd ?? this.options.cwd ?? process.cwd();
+    const normalized = targetCwd.replace(/[/\\]+$/, "");
+    const lastSegment = normalized.split(/[/\\]/).pop() || normalized || "loom";
+    this.terminal.setTitle(`Loom - ${lastSegment}`);
+  }
+
   async start(): Promise<void> {
-    const cwd = this.options.cwd ?? process.cwd();
-    this.terminal.setTitle(`Loom - ${cwd}`);
+    this.updateTitle();
     this.tui.start();
     this.notify("info", `Loom ready · provider ${this.options.provider.name} · model ${resolveDisplayModel(this.options.provider, this.options.modelName)}`);
     if (this.options.provider.name === "mock") {
@@ -340,7 +370,7 @@ export class LoomReplSession {
       const planTasks = plan ? this.options.state.listPlanTasks(plan.id) : [];
       const succeeded = planResult.status === "completed";
       if (succeeded) {
-        const response = planTasks.map((task) => task.result?.trim()).filter(Boolean).at(-1);
+        const response = planTasks.filter((task) => task.kind !== "verify").map((task) => task.result?.trim()).filter(Boolean).at(-1);
         if (response) this.appendMarkdown(response);
         this.notify("success", "Ready");
       } else {
@@ -620,7 +650,6 @@ export class LoomReplSession {
           this.options.modelName = undefined;
           this.tui.setFocus(this.editor);
           this.tui.requestRender();
-          this.appendMessage(chalk.green(`✔ API key configured and saved for ${chalk.bold(providerName)}!`));
           this.notify("success", `Active provider switched to ${providerName}.`);
           resolve(true);
         },

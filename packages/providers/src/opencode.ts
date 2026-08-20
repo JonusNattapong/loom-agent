@@ -26,7 +26,7 @@ export class OpenCodeProvider implements Provider {
 
   constructor(options: OpenCodeProviderOptions = {}) {
     this.cwd = options.cwd ?? process.cwd();
-    this.timeoutMs = options.timeoutMs ?? 10 * 60 * 1000;
+    this.timeoutMs = options.timeoutMs ?? 60 * 1000;
     this.baseUrl = options.baseUrl ?? process.env.OPENCODE_BASE_URL;
     this.defaultModel = options.model ?? process.env.OPENCODE_MODEL;
   }

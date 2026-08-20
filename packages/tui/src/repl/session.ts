@@ -215,11 +215,8 @@ export class LoomReplSession {
       return;
     }
 
-    // Render User Goal Bubble with styled purple pill
-    const userBubble = [
-      chalk.bgRgb(79, 70, 229).white.bold(` ▶ Goal(set: ${input}) `),
-      chalk.dim("  └─ ") + chalk.italic.dim(`Agent planning session started: ${new Date().toLocaleTimeString()}`),
-    ].join("\n");
+    // Render a compact chat transcript: user message first, assistant output below.
+    const userBubble = chalk.bgRgb(24, 24, 27).white(` ${input} `);
     this.appendMessage(userBubble);
     this.isExecuting = true;
     this.updateStatusBar();
@@ -230,7 +227,7 @@ export class LoomReplSession {
       this.tui,
       (t) => chalk.rgb(168, 85, 247)(t),
       (t) => chalk.dim(t),
-      " ✦ Unravelling & Planning..."
+      " ✦ Waiting..."
     );
     this.historyContainer.addChild(loader);
     this.tui.requestRender();
@@ -336,33 +333,15 @@ export class LoomReplSession {
 
       // Render Multi-Agent Progress Tree
       const plan = this.options.state.getPlanForAgent(agent.id);
-      const tasks: ProgressTaskItem[] = plan
-        ? this.options.state.listPlanTasks(plan.id).map((t) => ({
-            id: t.id,
-            title: t.title,
-            status: t.status as ProgressTaskItem["status"],
-            role: "planner",
-            duration: `${Math.floor((Date.now() - startTime) / 1000)}s`,
-          }))
-        : [
-            { id: "1", title: "Analyze and fulfill goal", status: "completed", duration: "2s" },
-          ];
-
-      this.historyContainer.addChild(
-        new MultiAgentProgressView({
-          goal: input,
-          agentId: agent.id,
-          tasks,
-          parallelCount: tasks.length,
-        })
-      );
-
-      // Render Assistant Output / Summary
+      const planTasks = plan ? this.options.state.listPlanTasks(plan.id) : [];
       const succeeded = planResult.status === "completed";
-      this.appendMessage(
-        (succeeded ? chalk.bold.green(`\n✔ Completed: `) : chalk.bold.red(`\n✖ Failed: `)) + chalk.dim(`Agent [${agent.id}] status: ${planResult.status}`)
-      );
-      this.notify(succeeded ? "success" : "error", `Execution ${succeeded ? "completed" : "failed"} · ${planResult.status}`);
+      if (succeeded) {
+        const response = planTasks.map((task) => task.result?.trim()).filter(Boolean).at(-1);
+        if (response) this.appendMarkdown(response);
+        this.notify("success", "Ready");
+      } else {
+        this.notify("error", `Request failed · ${planResult.status}`);
+      }
       this.historyContainer.addChild(new Spacer(1));
     } catch (error) {
       this.historyContainer.removeChild(loader);

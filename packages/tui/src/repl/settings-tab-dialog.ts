@@ -12,6 +12,7 @@ export interface ProviderItem {
   category: string;
   isConfigured: boolean;
   statusText?: string;
+  authMethod?: "oauth" | "apikey" | "endpoint";
 }
 
 export interface ModelItem {
@@ -37,19 +38,20 @@ export interface SettingsDialogProps {
   models?: ModelItem[];
   mcpConnections?: McpItem[];
   onSelectModel: (modelId: string, providerId: string) => void;
-  onSelectProvider: (providerId: string) => void;
+  onSelectProvider: (providerId: string, authMethod?: "oauth" | "apikey" | "endpoint") => void;
   onClose: () => void;
 }
 
 const DEFAULT_PROVIDERS: ProviderItem[] = [
-  { id: "anthropic", name: "Anthropic (Claude 3.7 / 3.5)", category: "api key / subscription", isConfigured: true, statusText: "configured" },
-  { id: "google", name: "Google Gemini (Gemini 2.5 Flash / Pro)", category: "api key", isConfigured: true, statusText: "configured" },
-  { id: "openai", name: "OpenAI (GPT-4o, o3-mini)", category: "api key / subscription", isConfigured: true, statusText: "configured" },
-  { id: "mistral", name: "Mistral AI (Codestral, Mistral Large)", category: "api key", isConfigured: false, statusText: "unconfigured" },
-  { id: "ollama", name: "Ollama (Local Models)", category: "local endpoint", isConfigured: true, statusText: "configured" },
-  { id: "openrouter", name: "OpenRouter", category: "api key", isConfigured: false, statusText: "unconfigured" },
-  { id: "deepseek", name: "DeepSeek (DeepSeek V3 / R1)", category: "api key", isConfigured: false, statusText: "unconfigured" },
-  { id: "groq", name: "Groq (Llama 3.3 Ultra-fast)", category: "api key", isConfigured: false, statusText: "unconfigured" },
+  { id: "opencode", name: "OpenCode (AI Coding Engine)", category: "API Key / Local Server", isConfigured: true, statusText: "configured", authMethod: "apikey" },
+  { id: "anthropic", name: "Anthropic (Claude 3.7 / 3.5)", category: "OAuth (Claude Pro/Max) / API Key", isConfigured: true, statusText: "configured", authMethod: "oauth" },
+  { id: "openai", name: "OpenAI (GPT-4o, o3-mini)", category: "OAuth (ChatGPT Plus) / API Key", isConfigured: true, statusText: "configured", authMethod: "oauth" },
+  { id: "google", name: "Google Gemini (Gemini 2.5 Flash / Pro)", category: "API Key", isConfigured: true, statusText: "configured", authMethod: "apikey" },
+  { id: "mistral", name: "Mistral AI (Codestral, Mistral Large)", category: "API Key", isConfigured: false, statusText: "unconfigured", authMethod: "apikey" },
+  { id: "ollama", name: "Ollama (Local Models)", category: "Local Server Endpoint", isConfigured: true, statusText: "configured", authMethod: "endpoint" },
+  { id: "openrouter", name: "OpenRouter", category: "API Key", isConfigured: false, statusText: "unconfigured", authMethod: "apikey" },
+  { id: "deepseek", name: "DeepSeek (DeepSeek V3 / R1)", category: "API Key", isConfigured: false, statusText: "unconfigured", authMethod: "apikey" },
+  { id: "groq", name: "Groq (Llama 3.3 Ultra-fast)", category: "API Key", isConfigured: false, statusText: "unconfigured", authMethod: "apikey" },
 ];
 
 const DEFAULT_MODELS: ModelItem[] = [
@@ -86,8 +88,9 @@ export class SettingsMultiTabDialog implements Component {
   constructor(private readonly props: SettingsDialogProps) {
     this.currentTab = props.initialTab ?? "providers";
     this.providers = props.providers ?? DEFAULT_PROVIDERS;
-    this.models = props.models ?? DEFAULT_MODELS;
-    this.mcpConnections = props.mcpConnections ?? DEFAULT_MCP;
+    const activeProvider = props.currentProvider.toLowerCase();
+    this.models = (props.models ?? DEFAULT_MODELS).filter((model) => model.provider.toLowerCase() === activeProvider);
+    this.mcpConnections = props.mcpConnections ?? [];
 
     // Check environment keys for providers
     if (typeof process !== "undefined" && process.env) {
@@ -108,7 +111,8 @@ export class SettingsMultiTabDialog implements Component {
 
   public updateModels(newModels: ModelItem[]): void {
     if (newModels && newModels.length > 0) {
-      this.models = newModels;
+      const activeProvider = this.props.currentProvider.toLowerCase();
+      this.models = newModels.filter((model) => model.provider.toLowerCase() === activeProvider);
     }
   }
 
@@ -118,13 +122,13 @@ export class SettingsMultiTabDialog implements Component {
       return;
     }
 
-    if (matchesKey(data, "tab") || matchesKey(data, "right")) {
-      this.switchNextTab();
+    if (matchesKey(data, "shift+tab") || matchesKey(data, "left") || data === "\x1b[Z" || data === "\x1b[1;2Z") {
+      this.switchPrevTab();
       return;
     }
 
-    if (matchesKey(data, "shift+tab") || matchesKey(data, "left") || data === "\x1b[Z") {
-      this.switchPrevTab();
+    if (matchesKey(data, "tab") || matchesKey(data, "right") || data === "\t") {
+      this.switchNextTab();
       return;
     }
 
@@ -202,7 +206,7 @@ export class SettingsMultiTabDialog implements Component {
       this.props.onClose();
     } else if (this.currentTab === "providers") {
       const p = item as ProviderItem;
-      this.props.onSelectProvider(p.id);
+      this.props.onSelectProvider(p.id, p.authMethod ?? "apikey");
       this.props.onClose();
     } else {
       this.props.onClose();
@@ -210,22 +214,39 @@ export class SettingsMultiTabDialog implements Component {
   }
 
   render(width: number): string[] {
+    const cardWidth = Math.min(Math.max(width, 50), 96);
+    const innerWidth = cardWidth - 2;
+    const border = chalk.rgb(71, 85, 105);
+    const divider = chalk.rgb(51, 65, 85);
+    const dim = chalk.rgb(100, 116, 139);
+    const muted = chalk.rgb(148, 163, 184);
+
+    const fit = (value: string): string => {
+      const text = truncateToWidth(value, innerWidth);
+      return text + " ".repeat(Math.max(0, innerWidth - visibleWidth(text)));
+    };
+
+    const row = (value = ""): string => border("│") + fit(value ? ` ${value}` : "") + border("│");
+    const emptyRow = (): string => border("│") + " ".repeat(innerWidth) + border("│");
+
     const lines: string[] = [];
-    const maxVisibleRows = 8;
+    const maxVisibleRows = 6;
+
+    lines.push(border("╭" + "─".repeat(innerWidth) + "╮"));
 
     // Header Title and Description per tab
     if (this.currentTab === "providers") {
-      lines.push(chalk.bold.white("Providers"));
-      lines.push(chalk.dim("Connect with a subscription or API key."));
+      lines.push(row(`${chalk.bold.rgb(167, 139, 250)("◆")} ${chalk.bold.white("Providers")}`));
+      lines.push(row(dim("Connect with a subscription, API key, or local server.")));
     } else if (this.currentTab === "models") {
-      lines.push(chalk.bold.white("Models"));
-      lines.push(chalk.dim("All models across supported providers."));
+      lines.push(row(`${chalk.bold.rgb(167, 139, 250)("◆")} ${chalk.bold.white("Models")}`));
+      lines.push(row(dim("All models across supported providers.")));
     } else {
-      lines.push(chalk.bold.white("MCP Connections"));
-      lines.push(chalk.dim("Connect MCP integrations and service credentials."));
+      lines.push(row(`${chalk.bold.rgb(167, 139, 250)("◆")} ${chalk.bold.white("MCP Connections")}`));
+      lines.push(row(dim("Connect MCP integrations and service credentials.")));
     }
 
-    lines.push("");
+    lines.push(emptyRow());
 
     // Tabs Header
     const tabItem = (tab: SettingsTab, label: string) => {
@@ -236,21 +257,22 @@ export class SettingsMultiTabDialog implements Component {
     };
 
     const tabsLine = `Tabs:  ${tabItem("providers", "Providers")}  ${tabItem("models", "Models")}  ${tabItem("mcp", "MCP Connections")}`;
-    lines.push(tabsLine);
-    lines.push(chalk.dim("Tab/Shift+Tab switch tabs · Esc close"));
-    lines.push("");
+    lines.push(row(tabsLine));
+    lines.push(row(dim("Tab/Shift+Tab switch tabs · Esc close")));
+    lines.push(emptyRow());
 
     // Search bar with cursor
     const searchPrompt = this.searchQuery
       ? `Search: ${chalk.bold.white(this.searchQuery)}${chalk.bgWhite.black(" ")}`
-      : chalk.bgWhite.black(" ");
-    lines.push(searchPrompt);
-    lines.push("");
+      : `Search: ${chalk.bgWhite.black(" ")}`;
+    lines.push(row(searchPrompt));
+    lines.push(border("├" + divider("─".repeat(innerWidth)) + "┤"));
 
     // List rendering
     const list = this.getCurrentFilteredList();
     if (list.length === 0) {
-      lines.push(chalk.dim("  (No matching items found)"));
+      lines.push(row(dim("  (No matching items found)")));
+      lines.push(emptyRow());
     } else {
       const startIndex = Math.max(0, Math.min(this.selectedIndex - Math.floor(maxVisibleRows / 2), list.length - maxVisibleRows));
       const visibleItems = list.slice(startIndex, startIndex + maxVisibleRows);
@@ -286,28 +308,23 @@ export class SettingsMultiTabDialog implements Component {
 
         const titleVisible = visibleWidth(titleStr);
         const statusVisible = visibleWidth(statusTag);
-        const gap = Math.max(2, width - titleVisible - statusVisible - 4);
+        const gap = Math.max(2, innerWidth - titleVisible - statusVisible - 4);
 
         if (isSelected) {
-          // Selected Item (highlighted background)
-          lines.push(
-            chalk.bgRgb(64, 64, 64).white.bold(` ${titleStr}${" ".repeat(gap)}${statusTag} `)
-          );
-          lines.push(
-            chalk.bgRgb(64, 64, 64).gray(` ${subStr}${" ".repeat(Math.max(1, width - visibleWidth(subStr) - 2))} `)
-          );
+          lines.push(row(chalk.bgRgb(51, 65, 85).white.bold(` › ${titleStr}${" ".repeat(gap)}${statusTag} `)));
+          lines.push(row(chalk.bgRgb(51, 65, 85).cyan(`   ${subStr}${" ".repeat(Math.max(1, innerWidth - visibleWidth(subStr) - 6))} `)));
         } else {
-          // Normal Item
-          lines.push(` ${chalk.bold.white(titleStr)}${" ".repeat(gap)}${statusTag}`);
-          lines.push(` ${chalk.dim(subStr)}`);
+          lines.push(row(`   ${chalk.white(titleStr)}${" ".repeat(gap)}${statusTag}`));
+          lines.push(row(`   ${chalk.dim(subStr)}`));
         }
       }
 
       // Count footer (e.g. (1/34))
-      lines.push("");
-      lines.push(chalk.dim(` (${this.selectedIndex + 1}/${list.length})`));
+      lines.push(emptyRow());
+      lines.push(row(dim(` (${this.selectedIndex + 1}/${list.length})`)));
     }
 
+    lines.push(border("╰" + "─".repeat(innerWidth) + "╯"));
     return lines;
   }
 

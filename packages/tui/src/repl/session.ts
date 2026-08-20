@@ -622,6 +622,8 @@ export class LoomReplSession {
 
   private async openApiKeyDialog(providerId: string = "anthropic", providerName: string = "Anthropic"): Promise<void> {
     return new Promise<void>((resolve) => {
+      // Do not leave the command text/input visible behind the modal.
+      this.editor.setText("");
       let handle: { hide: () => void };
       const dialog = new ApiKeyPromptDialog({
         providerId,

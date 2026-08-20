@@ -3,7 +3,7 @@ import { promises as fs } from "node:fs";
 import { join } from "node:path";
 import type { Component } from "../tui.js";
 import { matchesKey } from "../keys.js";
-import { visibleWidth } from "../utils.js";
+import { visibleWidth, truncateToWidth } from "../utils.js";
 
 export interface ApiKeyDialogProps {
   providerId: string;
@@ -13,6 +13,7 @@ export interface ApiKeyDialogProps {
 }
 
 const PROVIDER_KEY_DOCS: Record<string, { envVar: string; url: string; prefix: string }> = {
+  opencode: { envVar: "OPENCODE_API_KEY", url: "https://opencode.ai / Local SDK config", prefix: "" },
   anthropic: { envVar: "ANTHROPIC_API_KEY", url: "https://console.anthropic.com/settings/keys", prefix: "sk-ant-" },
   claude: { envVar: "ANTHROPIC_API_KEY", url: "https://console.anthropic.com/settings/keys", prefix: "sk-ant-" },
   openai: { envVar: "OPENAI_API_KEY", url: "https://platform.openai.com/api-keys", prefix: "sk-" },
@@ -22,9 +23,12 @@ const PROVIDER_KEY_DOCS: Record<string, { envVar: string; url: string; prefix: s
   deepseek: { envVar: "DEEPSEEK_API_KEY", url: "https://platform.deepseek.com/api_keys", prefix: "sk-" },
   groq: { envVar: "GROQ_API_KEY", url: "https://console.groq.com/keys", prefix: "gsk_" },
   openrouter: { envVar: "OPENROUTER_API_KEY", url: "https://openrouter.ai/keys", prefix: "sk-or-" },
+  ollama: { envVar: "OPENAI_BASE_URL", url: "http://localhost:11434/v1", prefix: "http" },
 };
 
 export class ApiKeyPromptDialog implements Component {
+  /** TUI focus marker; modal input must own the active terminal focus. */
+  focused = false;
   private keyBuffer = "";
   private showPlaintext = false;
   private savePermanently = true;
@@ -112,27 +116,39 @@ export class ApiKeyPromptDialog implements Component {
   }
 
   render(width: number): string[] {
+    const cardWidth = Math.min(Math.max(width, 50), 92);
+    const innerWidth = cardWidth - 2;
+    const border = chalk.rgb(71, 85, 105);
+    const divider = chalk.rgb(51, 65, 85);
+    const dim = chalk.rgb(100, 116, 139);
+    const muted = chalk.rgb(148, 163, 184);
+    const cyan = chalk.rgb(56, 189, 248);
+
+    const fit = (value: string): string => {
+      const text = truncateToWidth(value, innerWidth);
+      return text + " ".repeat(Math.max(0, innerWidth - visibleWidth(text)));
+    };
+
+    const row = (value = ""): string => border("│") + fit(value ? ` ${value}` : "") + border("│");
+    const emptyRow = (): string => border("│") + " ".repeat(innerWidth) + border("│");
+
     const lines: string[] = [];
+    lines.push(border("╭" + "─".repeat(innerWidth) + "╮"));
+    lines.push(row(`${chalk.bold.rgb(167, 139, 250)("◆")} ${chalk.bold.white(`Set up ${this.props.providerName} API Key`)}`));
+    lines.push(row(`${muted(`Enter your API key to authenticate and unlock ${this.props.providerName} models.`)}`));
+    lines.push(emptyRow());
 
-    // Header
-    lines.push(chalk.bold.white(`Set up ${this.props.providerName} API Key`));
-    lines.push(chalk.dim(`Enter your API key to authenticate and unlock ${this.props.providerName} models.`));
-    lines.push("");
+    lines.push(row(`${dim("Get your API key at:")}`));
+    lines.push(row(`  ${cyan(this.docsUrl)}`));
+    lines.push(emptyRow());
 
-    // Docs URL
-    lines.push(chalk.dim("Get your API key at:"));
-    lines.push(`  ${chalk.cyan(this.docsUrl)}`);
-    lines.push("");
+    lines.push(row(`${chalk.bold.white(`API Key (${this.envVarName}):`)}`));
 
-    // Input Prompt
-    lines.push(chalk.bold.white(`API Key (${this.envVarName}):`));
-    
     let displayValue = "";
     if (this.keyBuffer.length > 0) {
       if (this.showPlaintext) {
         displayValue = chalk.white(this.keyBuffer);
       } else {
-        // Masked key display (show first 3 and last 3 chars if long enough)
         if (this.keyBuffer.length > 8) {
           const start = this.keyBuffer.slice(0, 4);
           const end = this.keyBuffer.slice(-3);
@@ -145,10 +161,9 @@ export class ApiKeyPromptDialog implements Component {
     }
 
     const cursor = chalk.bgWhite.black(" ");
-    lines.push(`  ${displayValue}${cursor}`);
-    lines.push("");
+    lines.push(row(`  ${displayValue}${cursor}`));
+    lines.push(emptyRow());
 
-    // Options & Keybindings
     const saveToggle = this.savePermanently
       ? chalk.green("● Save permanently to .env")
       : chalk.yellow("○ Session only (temporary)");
@@ -156,15 +171,15 @@ export class ApiKeyPromptDialog implements Component {
       ? chalk.cyan("[Hide key]")
       : chalk.dim("[Show key]");
 
-    lines.push(`  ${saveToggle} ${chalk.dim("(Ctrl+S to toggle)")}  ${viewToggle} ${chalk.dim("(Tab to toggle)")}`);
-    lines.push("");
+    lines.push(row(`  ${saveToggle} ${dim("(Ctrl+S)")}   ${viewToggle} ${dim("(Tab)")}`));
 
     if (this.errorMessage) {
-      lines.push(chalk.red(` ⚠ ${this.errorMessage}`));
-      lines.push("");
+      lines.push(row(`  ${chalk.red(`⚠ ${this.errorMessage}`)}`));
     }
 
-    lines.push(chalk.dim("Enter submit key · Esc cancel"));
+    lines.push(border("├" + divider("─".repeat(innerWidth)) + "┤"));
+    lines.push(row(`  ${chalk.dim("Enter submit key")}   ${chalk.dim("·   Esc cancel")}`));
+    lines.push(border("╰" + "─".repeat(innerWidth) + "╯"));
 
     return lines;
   }

@@ -104,3 +104,27 @@ export class SelfPlanner {
   return [{id:"understand",title:`Understand: ${goal}`,status:"pending"},{id:"execute",title:`Execute: ${goal}`,dependsOn:["understand"],status:"pending"},{id:"verify",title:`Verify: ${goal}`,dependsOn:["execute"],status:"pending"}];
  }
 }
+
+export type SelfEvaluation={passed:boolean;score:number;issues:string[];suggestedCorrection?:string};
+export class SelfEvaluator {
+ constructor(private readonly runtime:SelfRuntime){}
+ evaluate(goal:string,response:string):SelfEvaluation{
+  if(!this.runtime.isEnabled("evaluation"))return {passed:true,score:1,issues:[]};
+  const issues:string[]=[];if(!response.trim())issues.push("empty response");if(response.length<Math.min(20,goal.length))issues.push("response may not address the goal");
+  return {passed:issues.length===0,score:Math.max(0,1-issues.length*.35),issues,suggestedCorrection:issues.length?`Re-check the goal and provide a complete response: ${goal}`:undefined};
+ }
+}
+
+export class SelfCorrection {
+ constructor(private readonly runtime:SelfRuntime){}
+ shouldRetry(evaluation:SelfEvaluation,attempt:number,maxAttempts=2){return this.runtime.isEnabled("correction")&&evaluation.passed===false&&attempt<maxAttempts;}
+}
+
+export type SelfTestResult={name:string;passed:boolean;detail?:string};
+export class SelfTester {
+ constructor(private readonly runtime:SelfRuntime){}
+ async run(checks:Array<{name:string;run:()=>Promise<boolean>|boolean}>):Promise<SelfTestResult[]>{
+  if(!this.runtime.isEnabled("testing"))return [];
+  return Promise.all(checks.map(async check=>{try{const passed=await check.run();return {name:check.name,passed,detail:passed?undefined:"check returned false"};}catch(error){return {name:check.name,passed:false,detail:error instanceof Error?error.message:String(error)};}}));
+ }
+}

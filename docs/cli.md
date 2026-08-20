@@ -21,6 +21,7 @@ During development, invoke the CLI as `npm run loom -- <command>`. After linking
 
 | Command | Purpose |
 | --- | --- |
+| `repl` | Start an interactive TUI REPL session with live multi-agent execution, streaming thoughts, tool approvals, and slash commands. |
 | `run <goal>` | Create a root planner, persist a plan, delegate tasks, and verify results. |
 | `ps` | List root agents in reverse creation order. |
 | `agents [root-id]` | List all agents or one durable agent tree. |

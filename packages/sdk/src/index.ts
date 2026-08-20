@@ -22,7 +22,7 @@ import type {
 import {StateStore} from "@loom-agent/state";
 import {ToolExecutor, ToolRegistry, createNativeTools, type ToolPolicy} from "@loom-agent/tools";
 import {SkillRuntime} from "@loom-agent/skills";
-import {MockProvider, OpenAICompatibleProvider} from "@loom-agent/providers";
+import {createProvider, OpenAICompatibleProvider} from "@loom-agent/providers";
 
 import {
   SDK_API_VERSION,
@@ -361,14 +361,10 @@ function resolveProvider(provider?: Provider | {id: string; model?: string; apiK
     return provider as Provider;
   }
   const spec = provider as {id: string; model?: string; apiKeyEnv?: string} | undefined;
-  const id = spec?.id ?? process.env.LOOM_PROVIDER ?? "mock";
-  if (id === "mock") return new MockProvider();
-  if (id === "openai") {
-    const model = spec?.model ?? process.env.LOOM_MODEL;
-    const key = spec?.apiKeyEnv ? process.env[spec.apiKeyEnv] : process.env.LOOM_API_KEY;
-    return new OpenAICompatibleProvider(key, model);
-  }
-  throw new Error(`unknown provider id: ${id}. Register a provider via app.registerProvider().`);
+  const id = spec?.id ?? process.env.LOOM_PROVIDER ?? "anthropic";
+  const model = spec?.model ?? process.env.LOOM_MODEL;
+  const apiKey = spec?.apiKeyEnv ? process.env[spec.apiKeyEnv] : process.env.LOOM_API_KEY;
+  return createProvider({ id, model, apiKey });
 }
 
 async function startControlPlane(app: LoomApp, options: import("@loom-agent/control").ControlOptions): Promise<{service: import("@loom-agent/control").ControlPlaneService; server: import("@loom-agent/control").ControlServer}> {

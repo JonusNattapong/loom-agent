@@ -37,6 +37,9 @@
     },
     {
       "path": "../sdk"
+    },
+    {
+      "path": "../tui"
     }
   ],
   "include": [

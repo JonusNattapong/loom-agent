@@ -23,10 +23,14 @@ describe("@loom-agent/sdk public contracts", () => {
   });
 
   it("createLoomApp builds an app and runs a goal via embedded runtime", async () => {
+    const customProvider = {
+      name: "test-ai",
+      complete: async () => ({ content: "completed goal" }),
+    };
     const app = createLoomApp({
       name: "test-app",
-      agents: [defineAgent({id: "main", role: "planner", provider: "mock"})],
-      provider: {id: "mock"},
+      agents: [defineAgent({id: "main", role: "planner", provider: "test-ai"})],
+      provider: customProvider as any,
       dbPath: ":memory:",
     });
     const events: LoomEvent[] = [];
@@ -39,9 +43,13 @@ describe("@loom-agent/sdk public contracts", () => {
   });
 
   it("SDK tools run through the tool executor with permissions", async () => {
+    const customProvider = {
+      name: "test-ai",
+      complete: async () => ({ content: "ok" }),
+    };
     const app = createLoomApp({
       name: "tool-app",
-      provider: {id: "mock"},
+      provider: customProvider as any,
       dbPath: ":memory:",
       policy: {tools: {secret: "deny"}},
     });

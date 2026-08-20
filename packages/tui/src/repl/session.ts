@@ -622,6 +622,8 @@ export class LoomReplSession {
           this.appendMessage(chalk.green(`✔ API key configured and saved for ${chalk.bold(providerName)}!`));
           this.notify("success", `Active provider switched to ${providerName}.`);
           resolve();
+          // Continue setup directly into model selection after authentication.
+          void this.openSettingsDialog("models");
         },
         onCancel: () => {
           handle.hide();

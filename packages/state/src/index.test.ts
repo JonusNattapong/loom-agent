@@ -23,7 +23,7 @@ describe("StateStore",()=>{
       CREATE TABLE plans (id TEXT PRIMARY KEY,agent_id TEXT NOT NULL,goal TEXT NOT NULL,status TEXT NOT NULL,phase TEXT NOT NULL,created_at TEXT NOT NULL,updated_at TEXT NOT NULL); CREATE TABLE plan_tasks (id TEXT PRIMARY KEY,plan_id TEXT NOT NULL,title TEXT NOT NULL,kind TEXT NOT NULL,status TEXT NOT NULL,dependencies TEXT NOT NULL,retry_count INTEGER NOT NULL,max_retries INTEGER NOT NULL,failure_policy TEXT,blocked_reason TEXT,result TEXT,position INTEGER NOT NULL,created_at TEXT NOT NULL,updated_at TEXT NOT NULL);
       CREATE TABLE approval_requests (id TEXT PRIMARY KEY,agent_id TEXT NOT NULL,task_id TEXT,tool_call_id TEXT,tool_name TEXT NOT NULL,input TEXT NOT NULL,status TEXT NOT NULL,created_at TEXT NOT NULL,decided_at TEXT); CREATE TABLE artifacts (id TEXT PRIMARY KEY,agent_id TEXT NOT NULL,task_id TEXT,checkpoint_id TEXT,path TEXT NOT NULL,operation TEXT NOT NULL,created_at TEXT NOT NULL); CREATE TABLE task_checkpoints (id TEXT PRIMARY KEY,agent_id TEXT NOT NULL,plan_id TEXT NOT NULL,task_id TEXT,phase TEXT NOT NULL,step INTEGER NOT NULL,snapshot TEXT NOT NULL,created_at TEXT NOT NULL);
     `);db.close();
-    try{const state=new StateStore(filename);expect(state.getSchemaVersion()).toBe(12);expect(state.getAgent("legacy")).toMatchObject({goal:"legacy goal",role:"general",rootAgentId:"legacy",result:"done"});expect(state.listDelegations("legacy")).toEqual([]);state.close();}
+    try{const state=new StateStore(filename);expect(state.getSchemaVersion()).toBe(13);expect(state.getAgent("legacy")).toMatchObject({goal:"legacy goal",role:"general",rootAgentId:"legacy",result:"done"});expect(state.listDelegations("legacy")).toEqual([]);state.close();}
     finally{rmSync(filename,{force:true});}
   });
 
@@ -35,4 +35,26 @@ describe("StateStore",()=>{
     expect(state.getRemoteAssignment("e1")).toMatchObject({id:"e1",workerId:"w1"});
     expect(state.getWorker("w1")).toMatchObject({workerId:"w1",status:"online"}); state.close();
   });
+
+  it("persists operator sessions, audit events, control cursors, and guarded actions",()=>{
+    const state=new StateStore(":memory:");
+    expect(state.getSchemaVersion()).toBe(13);
+    const credential=state.createOperatorCredential({id:"operator-1",name:"Admin",tokenHash:"hash"});
+    expect(state.findOperatorCredentialByTokenHash("hash")).toMatchObject({id:credential?.id,enabled:true});
+    state.createOperatorSession({id:"session-1",credentialId:"operator-1",sessionHash:"session-hash",csrfHash:"csrf-hash",createdAt:1,lastSeenAt:1,expiresAt:100});
+    expect(state.getOperatorSession("session-hash")).toMatchObject({credentialId:"operator-1",csrfHash:"csrf-hash"});
+    state.rotateOperatorSessionCsrf("session-1","csrf-next",2);expect(state.getOperatorSession("session-hash")?.csrfHash).toBe("csrf-next");
+    state.recordOperatorAudit({requestId:"request-1",actorId:"operator-1",action:"job.cancel",resourceType:"job",resourceId:"job-1",outcome:"success",httpStatus:200,details:{safe:true},createdAt:3});
+    expect(state.listOperatorAudit()).toMatchObject([{action:"job.cancel",details:{safe:true}}]);
+    const event=state.appendControlEvent({type:"job.updated",resourceType:"job",resourceId:"job-1",data:{status:"queued"},createdAt:4});
+    expect(state.listControlEvents({afterId:event.id-1})).toMatchObject([{id:event.id,type:"job.updated"}]);
+    const job=state.enqueueJob({id:"job-1",type:"agent_run",payload:{goal:"safe"}});expect(job?.status).toBe("queued");expect(state.cancelJob("job-1")?.status).toBe("cancelled");expect(state.cancelJob("job-1")).toBeUndefined();expect(state.retryJob("job-1")?.status).toBe("queued");
+    state.revokeOperatorSession("session-1",5);expect(state.getOperatorSession("session-hash")?.revokedAt).toBe(5);state.close();
+  });
+
+  it("upgrades a migration 12 database to control-plane schema 13 without reset",()=>{
+    const filename=join(tmpdir(),`loom-v12-${randomUUID()}.db`);const initial=new StateStore(filename);initial.enqueueJob({id:"preserved-job",type:"agent_run",payload:{goal:"preserve"}});initial.db.prepare("DELETE FROM schema_migrations WHERE version=13").run();initial.db.exec("DROP TABLE operator_credentials; DROP TABLE operator_sessions; DROP TABLE operator_audit; DROP TABLE control_events; DROP TABLE worker_connection_epochs;");initial.close();
+    try{const upgraded=new StateStore(filename);expect(upgraded.getSchemaVersion()).toBe(13);expect(upgraded.getJob("preserved-job")?.id).toBe("preserved-job");expect(upgraded.listOperatorAudit()).toEqual([]);upgraded.close();}finally{rmSync(filename,{force:true});}
+  });
+
 });

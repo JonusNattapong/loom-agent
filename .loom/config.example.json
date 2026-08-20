@@ -4,5 +4,13 @@
   "context": {"maxChars": 50000},
   "agents": {"maxConcurrent": 2},
   "permissions": {"read_file": "allow", "write_file": "ask", "shell": "ask"},
+  "controlPlane": {
+    "enabled": true,
+    "host": "127.0.0.1",
+    "port": 4777,
+    "readOnly": false,
+    "sessionTtlMs": 28800000,
+    "sessionIdleMs": 1800000
+  },
   "mcpServers": {}
 }

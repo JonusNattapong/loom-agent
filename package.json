@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "eval": "tsx packages/evals/src/cli.ts",
+    "dev": "npm run loom -- repl",
     "check:packages": "node scripts/check-package-graph.mjs",
     "release:version": "changeset version",
     "release:publish": "npm run build && npm publish --workspaces --access public --provenance",

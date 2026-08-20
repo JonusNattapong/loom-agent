@@ -6,7 +6,7 @@ category: reference
 
 # CLI reference
 
-During development, invoke the CLI as `npm run loom -- <command>`. After linking or installing the package, use `loom <command>`.
+During development, invoke the CLI as `npm run loom -- <command>`. Use `npm run dev` to launch the interactive TUI REPL directly. After linking or installing the package, use `loom <command>`.
 
 ## Global options
 

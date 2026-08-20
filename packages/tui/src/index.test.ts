@@ -138,6 +138,15 @@ describe("@loom-agent/tui", () => {
     expect(lines[1]).toContain("accept edits on");
   });
 
+  it("keeps the default status line quiet until a preset is enabled", () => {
+    const statusBar = new StatusBarView({
+      model: "gpt-4o",
+      cwd: process.cwd(),
+      config: DEFAULT_STATUS_LINE_CONFIG,
+    });
+    expect(statusBar.render(80)).toEqual([]);
+  });
+
   it("renders ToolStreamView tool execution lines and a2a messages", () => {
     const stream = new ToolStreamView([
       {
@@ -246,7 +255,6 @@ describe("@loom-agent/tui", () => {
     expect(lines.join("\n")).toContain("console.anthropic.com");
   });
 });
-
 
 
 

@@ -19,7 +19,8 @@ export interface StatusLineConfig {
 }
 
 export const DEFAULT_STATUS_LINE_CONFIG: StatusLineConfig = {
-  enabled: true,
+  // Keep the first screen quiet. Users can enable a preset from /statusline.
+  enabled: false,
   style: "full",
   showModel: true,
   showCwd: true,

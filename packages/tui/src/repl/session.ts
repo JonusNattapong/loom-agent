@@ -45,6 +45,20 @@ export interface ReplSessionOptions {
   onDoctor?: () => Promise<unknown>;
 }
 
+function resolveDisplayModel(provider: Provider, configured?: string): string {
+  if (configured && configured !== "mock") return configured;
+  if (provider.name === "opencode") return process.env.OPENCODE_MODEL ?? "opencode";
+  return process.env.ANTHROPIC_API_KEY
+    ? "claude-3-7-sonnet"
+    : (process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY)
+      ? "gemini-2.5-flash"
+      : process.env.OPENAI_API_KEY
+        ? "gpt-4o"
+        : process.env.MISTRAL_API_KEY
+          ? "mistral-large"
+          : "mock";
+}
+
 export class LoomReplSession {
   private terminal: ProcessTerminal;
   private tui: TUI;
@@ -85,9 +99,7 @@ export class LoomReplSession {
       void this.handleInput(text.trim());
     };
 
-    const effectiveModel = (!this.options.modelName || this.options.modelName === "mock")
-      ? (process.env.ANTHROPIC_API_KEY ? "claude-3-7-sonnet" : (process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY) ? "gemini-2.5-flash" : process.env.OPENAI_API_KEY ? "gpt-4o" : "claude-3-7-sonnet")
-      : this.options.modelName;
+    const effectiveModel = resolveDisplayModel(this.options.provider, this.options.modelName);
 
     // Setup Status Bar
     this.statusBar = new StatusBarView({
@@ -118,20 +130,24 @@ export class LoomReplSession {
           this.stop();
           process.exit(0);
         }
-      } else if (matchesKey(data, "shift+tab") || data === "\x1b[Z") {
+      } else if (matchesKey(data, "shift+tab") || data === "\x1b[Z" || data === "\x1b[1;2Z") {
         // Toggle Permission Mode
         this.permissionMode = this.permissionMode === "accept edits on" ? "ask before edits" : "accept edits on";
+        this.appendMessage(
+          chalk.bold.cyan("\nApproval mode: ") +
+          chalk.white(this.permissionMode) +
+          chalk.dim(" (Shift+Tab to toggle)"),
+        );
         this.updateStatusBar();
         this.tui.requestRender();
+        return { consume: true };
       }
       return undefined;
     });
   }
 
   private updateStatusBar(): void {
-    const effectiveModel = (!this.options.modelName || this.options.modelName === "mock")
-      ? (process.env.ANTHROPIC_API_KEY ? "claude-3-7-sonnet" : (process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY) ? "gemini-2.5-flash" : process.env.OPENAI_API_KEY ? "gpt-4o" : "claude-3-7-sonnet")
-      : this.options.modelName;
+    const effectiveModel = resolveDisplayModel(this.options.provider, this.options.modelName);
 
     this.rootContainer.removeChild(this.statusBar);
     this.statusBar = new StatusBarView({
@@ -149,9 +165,7 @@ export class LoomReplSession {
   }
 
   private renderWelcome(): void {
-    const effectiveModel = (!this.options.modelName || this.options.modelName === "mock")
-      ? (process.env.ANTHROPIC_API_KEY ? "claude-3-7-sonnet" : (process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY) ? "gemini-2.5-flash" : process.env.OPENAI_API_KEY ? "gpt-4o" : "claude-3-7-sonnet")
-      : this.options.modelName;
+    const effectiveModel = resolveDisplayModel(this.options.provider, this.options.modelName);
 
     const providerName = this.options.provider.name === "mock"
       ? (process.env.ANTHROPIC_API_KEY ? "anthropic" : (process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY) ? "google" : process.env.OPENAI_API_KEY ? "openai" : "anthropic")

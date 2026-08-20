@@ -19,5 +19,9 @@
     "@loom/daemon": "file:../daemon",
     "@loom/control": "file:../control",
     "@loom/remote": "file:../remote"
-  }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ]
 }

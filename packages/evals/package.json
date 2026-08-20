@@ -12,5 +12,9 @@
     "@loom/tools": "1.0.0",
     "@loom/adaptive": "file:../adaptive",
     "@loom/daemon": "file:../daemon"
-  }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ]
 }

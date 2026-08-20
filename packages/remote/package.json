@@ -9,5 +9,9 @@
     "ws": "^8.21.3",
     "@loom/tools": "1.0.0",
     "@loom/network": "file:../network"
-  }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ]
 }

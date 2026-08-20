@@ -11,5 +11,9 @@
     "@loom/skills": "1.0.0",
     "@loom/state": "1.0.0",
     "@loom/tools": "1.0.0"
-  }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ]
 }

@@ -12,8 +12,8 @@
     "world-adapter": "tsx world-adapter.ts"
   },
   "dependencies": {
-    "@loom/sdk": "1.0.0",
-    "@loom/config": "1.0.0"
+    "@loom-agent/sdk": "1.0.0",
+    "@loom-agent/config": "1.0.0"
   },
   "devDependencies": {
     "tsx": "^4.19.0",

@@ -1,5 +1,5 @@
 /**
- * @loom/sdk/world — Agent Arena WorldAdapter foundation (EXPERIMENTAL).
+ * @loom-agent/sdk/world — Agent Arena WorldAdapter foundation (EXPERIMENTAL).
  *
  * This is a stable *bridge contract*, not a game engine. Loom decides strategy
  * and high-level actions; an external simulation (e.g. Godot) executes them.

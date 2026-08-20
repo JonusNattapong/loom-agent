@@ -1,4 +1,4 @@
-import type {StateStore} from "@loom/state";
+import type {StateStore} from "@loom-agent/state";
 import {RemoteFabricController} from "./index.js";
 import {WebSocketControllerOptions,WebSocketControllerTransport} from "./transport.js";
 

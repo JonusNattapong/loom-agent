@@ -10,7 +10,7 @@
  * - trace
  * - acknowledge
  */
-import { StateStore } from "@loom/state";
+import { StateStore } from "@loom-agent/state";
 import { EnhancedBotSessionManager } from "../sessions/enhanced-session-manager";
 import { EventDedup } from "./dedup-store";
 import { BotEvent, BotEventType, BotEventType as DiscordEventType } from "../types";

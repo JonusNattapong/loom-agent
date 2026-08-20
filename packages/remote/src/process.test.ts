@@ -5,7 +5,7 @@ import {join,resolve} from "node:path";
 import {pathToFileURL} from "node:url";
 import {spawn,spawnSync} from "node:child_process";
 import {createServer} from "node:net";
-import {StateStore} from "@loom/state";
+import {StateStore} from "@loom-agent/state";
 import {RemoteControllerService,hashWorkerToken} from "./index.js";
 
 const waitFor=(check:()=>boolean,timeout=30000)=>new Promise<void>((resolvePromise,reject)=>{const started=Date.now();const tick=()=>{try{if(check())return resolvePromise();}catch{}if(Date.now()-started>timeout)return reject(new Error("process E2E timeout"));setTimeout(tick,25);};tick();});

@@ -1,8 +1,8 @@
-import type {Message,Provider} from "@loom/core";
-import {StateStore} from "@loom/state";
-import {ToolExecutor,ToolPolicy,ToolRegistry} from "@loom/tools";
-import {ContextCompiler} from "@loom/context";
-import {SkillRuntime} from "@loom/skills";
+import type {Message,Provider} from "@loom-agent/core";
+import {StateStore} from "@loom-agent/state";
+import {ToolExecutor,ToolPolicy,ToolRegistry} from "@loom-agent/tools";
+import {ContextCompiler} from "@loom-agent/context";
+import {SkillRuntime} from "@loom-agent/skills";
 export type AgentLoopOptions={context?:ContextCompiler;skills?:SkillRuntime;selectedSkills?:string[];maxChars?:number;system?:string;toolPolicy?:ToolPolicy;files?:string[]};
 export class AgentLoop {
  constructor(private readonly state:StateStore,private readonly provider:Provider,private readonly tools?:ToolRegistry,private readonly options:AgentLoopOptions={}){}

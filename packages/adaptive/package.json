@@ -1,8 +1,8 @@
 {
   "dependencies": {
-    "@loom/core": "^1.1.0",
-    "@loom/planner": "^1.1.0",
-    "@loom/state": "^1.1.0"
+    "@loom-agent/core": "^1.1.0",
+    "@loom-agent/planner": "^1.1.0",
+    "@loom-agent/state": "^1.1.0"
   },
   "devDependencies": {},
   "engines": {
@@ -10,7 +10,7 @@
   },
   "license": "MIT",
   "main": "dist/index.js",
-  "name": "@loom/adaptive",
+  "name": "@loom-agent/adaptive",
   "publishConfig": {
     "access": "public"
   },

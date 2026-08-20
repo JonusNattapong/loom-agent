@@ -18,7 +18,7 @@
  *     ↓
  *   Bot Response
  */
-import { StateStore } from "@loom/state";
+import { StateStore } from "@loom-agent/state";
 import { BotSession, BotSessionManager } from "./sessions/bot-session-manager";
 import { BotEvent, BotEventType } from "../types";
 

@@ -8,7 +8,7 @@
     "packages/bots"
   ],
   "scripts": {
-    "build": "tsc -b && npm -w @loom/web run build",
+    "build": "tsc -b && npm -w @loom-agent/web run build",
     "test": "vitest run",
     "test:watch": "vitest",
     "eval": "tsx packages/evals/src/cli.ts",
@@ -16,7 +16,7 @@
     "release:version": "changeset version",
     "release:publish": "npm run build && npm publish --workspaces --access public --provenance",
     "loom": "tsx packages/cli/src/index.ts",
-    "test:web": "npm -w @loom/web test"
+    "test:web": "npm -w @loom-agent/web test"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.1",

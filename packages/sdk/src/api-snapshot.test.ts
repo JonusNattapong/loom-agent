@@ -3,7 +3,7 @@ import * as sdk from "./index.js";
 import type {AgentRole,Provider,ToolDefinition,LoomEvent,LoomAddress,LoomRoute,WorkerCapability,WorldAdapter} from "./contracts.js";
 
 /** Guards the public SDK contract: accidental removals fail CI. */
-describe("@loom/sdk public API snapshot", () => {
+describe("@loom-agent/sdk public API snapshot", () => {
   const runtimeExports = [
     "defineAgent",
     "defineTool",

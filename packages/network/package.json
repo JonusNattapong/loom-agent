@@ -8,7 +8,7 @@
   ],
   "license": "MIT",
   "main": "dist/index.js",
-  "name": "@loom/network",
+  "name": "@loom-agent/network",
   "publishConfig": {
     "access": "public"
   },

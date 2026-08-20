@@ -1,7 +1,7 @@
 import {describe, it, expect} from "vitest";
 import {validateConfig, assertValid, isValid, CURRENT_SCHEMA_VERSION} from "./index.js";
 
-describe("@loom/config validation", () => {
+describe("@loom-agent/config validation", () => {
   it("accepts a minimal valid config", () => {
     const issues = validateConfig({schemaVersion: 1, name: "x", provider: {id: "mock"}});
     expect(issues.filter((i) => i.severity === "error")).toHaveLength(0);

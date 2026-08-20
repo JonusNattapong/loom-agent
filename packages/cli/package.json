@@ -3,18 +3,18 @@
     "loom": "dist/index.js"
   },
   "dependencies": {
-    "@loom/control": "^1.1.0",
-    "@loom/coordinator": "^1.1.0",
-    "@loom/core": "^1.1.0",
-    "@loom/daemon": "^1.1.0",
-    "@loom/mcp": "^1.1.0",
-    "@loom/planner": "^1.1.0",
-    "@loom/providers": "^1.1.0",
-    "@loom/remote": "^1.1.0",
-    "@loom/runtime": "^1.1.0",
-    "@loom/skills": "^1.1.0",
-    "@loom/state": "^1.1.0",
-    "@loom/tools": "^1.1.0"
+    "@loom-agent/control": "^1.1.0",
+    "@loom-agent/coordinator": "^1.1.0",
+    "@loom-agent/core": "^1.1.0",
+    "@loom-agent/daemon": "^1.1.0",
+    "@loom-agent/mcp": "^1.1.0",
+    "@loom-agent/planner": "^1.1.0",
+    "@loom-agent/providers": "^1.1.0",
+    "@loom-agent/remote": "^1.1.0",
+    "@loom-agent/runtime": "^1.1.0",
+    "@loom-agent/skills": "^1.1.0",
+    "@loom-agent/state": "^1.1.0",
+    "@loom-agent/tools": "^1.1.0"
   },
   "engines": {
     "node": ">=22"
@@ -25,7 +25,7 @@
   ],
   "license": "MIT",
   "main": "dist/index.js",
-  "name": "@loom/cli",
+  "name": "@loom-agent/cli",
   "publishConfig": {
     "access": "public"
   },

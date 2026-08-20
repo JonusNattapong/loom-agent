@@ -3,7 +3,7 @@ import {mkdir} from "node:fs/promises";
 import {resolve,relative,sep} from "node:path";
 import {execFile} from "node:child_process";
 import {promisify} from "node:util";
-import type {PermissionLevel,Tool,ToolDefinition} from "@loom/core";
+import type {PermissionLevel,Tool,ToolDefinition} from "@loom-agent/core";
 const exec=promisify(execFile);
 export type PermissionHooks={readFile?:(path:string)=>boolean;writeFile?:(path:string)=>boolean;shell?:(command:string)=>boolean};
 function isInside(root:string,target:string){const workspace=resolve(root).toLowerCase();return target.toLowerCase()===workspace||target.toLowerCase().startsWith(workspace+sep);}

@@ -31,7 +31,7 @@ loom://bot/oracle%20alpha
 - Credentials, ports, query strings, and fragments are forbidden.
 - Non-canonical encodings are rejected rather than normalized. For example, `%67pu-01` is not accepted in place of `gpu-01`.
 
-`parseLoomAddress`, `formatLoomAddress`, `isLoomAddress`, and `sameLoomAddress` are exported by `@loom/network`. Parsed addresses are immutable.
+`parseLoomAddress`, `formatLoomAddress`, `isLoomAddress`, and `sameLoomAddress` are exported by `@loom-agent/network`. Parsed addresses are immutable.
 
 ## Identity is not a route
 

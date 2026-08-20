@@ -1,5 +1,5 @@
 // Public SDK only. Registers a bot with a custom BotTransport adapter.
-import {createLoomApp, defineAgent, defineBot, type BotTransport} from "@loom/sdk";
+import {createLoomApp, defineAgent, defineBot, type BotTransport} from "@loom-agent/sdk";
 
 class ConsoleTransport implements BotTransport {
   private handler?: (event: unknown) => void;

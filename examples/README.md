@@ -1,7 +1,7 @@
 # Loom V1.0 Examples
 
-These examples use **only the public `@loom/sdk` and `@loom/config` APIs**.
-They never import `@loom/*/dist/internal/...` or any `*/private` path.
+These examples use **only the public `@loom-agent/sdk` and `@loom-agent/config` APIs**.
+They never import `@loom-agent/*/dist/internal/...` or any `*/private` path.
 
 Run an example from this directory after building the workspace:
 

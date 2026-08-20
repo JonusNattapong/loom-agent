@@ -1,7 +1,7 @@
 import {readFileSync,existsSync,writeFileSync} from "node:fs";
-import type {Provider,ProviderResponse} from "@loom/core";
-import {StateStore} from "@loom/state";
-import {AdaptiveOrchestrator} from "@loom/adaptive";
+import type {Provider,ProviderResponse} from "@loom-agent/core";
+import {StateStore} from "@loom-agent/state";
+import {AdaptiveOrchestrator} from "@loom-agent/adaptive";
 function crashNow(){// Hard self-terminate. SIGKILL string form is unsupported on Windows.
   if(process.platform==="win32")process.exit(137);
   else process.kill(process.pid,"SIGKILL");

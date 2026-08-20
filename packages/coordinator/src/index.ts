@@ -1,10 +1,10 @@
 import type {
   Agent,AgentMessage,AgentMessageType,AgentResult,AgentRole,Delegation,FailurePolicy,
   Plan,PlanTask,RoleDefinition,ToolDefinition,Visibility,
-} from "@loom/core";
-import {ContextCompiler} from "@loom/context";
-import {TaskGraphRuntime} from "@loom/planner";
-import {StateStore} from "@loom/state";
+} from "@loom-agent/core";
+import {ContextCompiler} from "@loom-agent/context";
+import {TaskGraphRuntime} from "@loom-agent/planner";
+import {StateStore} from "@loom-agent/state";
 import {RoleRegistry} from "./roles.js";
 
 export {RoleRegistry} from "./roles.js";

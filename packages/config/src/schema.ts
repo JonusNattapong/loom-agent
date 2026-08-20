@@ -1,5 +1,5 @@
 /**
- * @loom/config — Versioned, validated Loom configuration schema.
+ * @loom-agent/config — Versioned, validated Loom configuration schema.
  *
  * This is the public configuration contract for V1.0. Application code and the
  * CLI depend on this shape, not on SQLite table names or private runtime classes.
@@ -7,7 +7,7 @@
  * Compatibility: schemaVersion 1 is supported. Future versions may add fields;
  * loaders must reject unknown major versions with a clear error.
  */
-import type {PermissionLevel, AgentRole} from "@loom/core";
+import type {PermissionLevel, AgentRole} from "@loom-agent/core";
 
 export const CURRENT_SCHEMA_VERSION = 1 as const;
 

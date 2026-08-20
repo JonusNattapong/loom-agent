@@ -1,5 +1,5 @@
 // Public SDK only (experimental). Agent Arena world-adapter foundation.
-import {FakeWorldAdapter, type ArenaObservation, type ArenaAction} from "@loom/sdk";
+import {FakeWorldAdapter, type ArenaObservation, type ArenaAction} from "@loom-agent/sdk";
 
 const world = new FakeWorldAdapter();
 const script: ArenaObservation[] = [

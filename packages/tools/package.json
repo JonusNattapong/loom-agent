@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "@loom/core": "^1.1.0"
+    "@loom-agent/core": "^1.1.0"
   },
   "devDependencies": {
-    "@loom/state": "^1.1.0"
+    "@loom-agent/state": "^1.1.0"
   },
   "engines": {
     "node": ">=22"
@@ -14,7 +14,7 @@
   ],
   "license": "MIT",
   "main": "dist/index.js",
-  "name": "@loom/tools",
+  "name": "@loom-agent/tools",
   "publishConfig": {
     "access": "public"
   },

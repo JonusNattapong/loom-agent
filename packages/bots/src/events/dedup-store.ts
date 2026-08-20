@@ -4,7 +4,7 @@
  * Persists processed events to prevent duplicate processing
  * after restarts or redeliveries.
  */
-import { StateStore } from "@loom/state";
+import { StateStore } from "@loom-agent/state";
 
 export interface DedupRecord {
   transport: string;

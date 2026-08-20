@@ -1,4 +1,4 @@
-# @loom/sdk
+# @loom-agent/sdk
 
 Public developer SDK for **Loom V1.0 — Unified Agent Platform**.
 
@@ -14,7 +14,7 @@ Control Plane, and extend the runtime with providers/tools/skills/bots.
 ## Install
 
 ```bash
-npm install @loom/sdk
+npm install @loom-agent/sdk
 ```
 
 Requires Node.js **>= 18.18** (LTS recommended).
@@ -27,7 +27,7 @@ import {
   defineTool,
   defineSkill,
   createLoomApp,
-} from "@loom/sdk";
+} from "@loom-agent/sdk";
 
 const coder = defineAgent({id: "coder", role: "coder", provider: "mock"});
 
@@ -80,7 +80,7 @@ const off = app.onEvent((event) => console.log(event.type, event.agentId));
 ## API client
 
 ```ts
-import {LoomClient} from "@loom/sdk/client";
+import {LoomClient} from "@loom-agent/sdk/client";
 const loom = new LoomClient({baseUrl: "http://127.0.0.1:4777"});
 const {sessionToken, csrfToken} = await loom.login(operatorToken);
 const jobs = await loom.jobs.list();

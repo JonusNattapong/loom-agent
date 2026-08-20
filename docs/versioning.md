@@ -16,7 +16,7 @@ internal implementation details.
 - **Experimental** — marked `@experimental` in code and docs (e.g. the Agent
   Arena `WorldAdapter` foundation). May change within a minor release; opt in
   explicitly.
-- **Internal** — anything in `@loom/*/dist/internal/...` or `*/private`. Not
+- **Internal** — anything in `@loom-agent/*/dist/internal/...` or `*/private`. Not
   covered by any compatibility promise. Applications that import these will
   break without notice.
 

@@ -1,10 +1,10 @@
 {
   "dependencies": {
-    "@loom/core": "^1.1.0",
-    "@loom/providers": "^1.1.0",
-    "@loom/skills": "^1.1.0",
-    "@loom/state": "^1.1.0",
-    "@loom/tools": "^1.1.0"
+    "@loom-agent/core": "^1.1.0",
+    "@loom-agent/providers": "^1.1.0",
+    "@loom-agent/skills": "^1.1.0",
+    "@loom-agent/state": "^1.1.0",
+    "@loom-agent/tools": "^1.1.0"
   },
   "description": "Public developer SDK for the Loom agent platform: define agents, tools, skills, and run them locally or remotely through stable contracts.",
   "engines": {
@@ -31,44 +31,44 @@
   ],
   "license": "MIT",
   "main": "dist/index.js",
-  "name": "@loom/sdk",
+  "name": "@loom-agent/sdk",
   "peerDependencies": {
-    "@loom/adaptive": "^1.1.0",
-    "@loom/bots": "^1.1.0",
-    "@loom/context": "^1.1.0",
-    "@loom/control": "^1.1.0",
-    "@loom/coordinator": "^1.1.0",
-    "@loom/daemon": "^1.1.0",
-    "@loom/network": "^1.1.0",
-    "@loom/remote": "^1.1.0",
-    "@loom/runtime": "^1.1.0"
+    "@loom-agent/adaptive": "^1.1.0",
+    "@loom-agent/bots": "^1.1.0",
+    "@loom-agent/context": "^1.1.0",
+    "@loom-agent/control": "^1.1.0",
+    "@loom-agent/coordinator": "^1.1.0",
+    "@loom-agent/daemon": "^1.1.0",
+    "@loom-agent/network": "^1.1.0",
+    "@loom-agent/remote": "^1.1.0",
+    "@loom-agent/runtime": "^1.1.0"
   },
   "peerDependenciesMeta": {
-    "@loom/adaptive": {
+    "@loom-agent/adaptive": {
       "optional": true
     },
-    "@loom/bots": {
+    "@loom-agent/bots": {
       "optional": true
     },
-    "@loom/context": {
+    "@loom-agent/context": {
       "optional": true
     },
-    "@loom/control": {
+    "@loom-agent/control": {
       "optional": true
     },
-    "@loom/coordinator": {
+    "@loom-agent/coordinator": {
       "optional": true
     },
-    "@loom/daemon": {
+    "@loom-agent/daemon": {
       "optional": true
     },
-    "@loom/network": {
+    "@loom-agent/network": {
       "optional": true
     },
-    "@loom/remote": {
+    "@loom-agent/remote": {
       "optional": true
     },
-    "@loom/runtime": {
+    "@loom-agent/runtime": {
       "optional": true
     }
   },

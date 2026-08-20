@@ -9,7 +9,7 @@ import {
 } from "./index.js";
 import type {LoomEvent} from "./contracts.js";
 
-describe("@loom/sdk public contracts", () => {
+describe("@loom-agent/sdk public contracts", () => {
   it("exposes a stable SDK API version", () => {
     expect(SDK_API_VERSION).toBe("1.1.0");
   });

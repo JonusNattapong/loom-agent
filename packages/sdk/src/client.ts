@@ -1,5 +1,5 @@
 /**
- * @loom/sdk/client — lightweight Control Plane API client for /api/v1.
+ * @loom-agent/sdk/client — lightweight Control Plane API client for /api/v1.
  *
  * Uses the stable /api/v1 contract. No internal runtime imports.
  */

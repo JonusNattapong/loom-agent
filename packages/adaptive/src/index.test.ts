@@ -1,7 +1,7 @@
 import {describe,expect,it} from "vitest";
 import {AdaptiveOrchestrator,ModelAdaptivePlanner,MultiRoundExecutor,SemanticReviewer,selectRole,selectTests,validatePlan} from "./index";
-import {StateStore} from "@loom/state";
-import type {Provider,ProviderResponse} from "@loom/core";
+import {StateStore} from "@loom-agent/state";
+import type {Provider,ProviderResponse} from "@loom-agent/core";
 class SequenceProvider implements Provider {readonly name="sequence"; private i=0; constructor(private readonly responses:ProviderResponse[]){} async complete(){return this.responses[Math.min(this.i++,this.responses.length-1)]} }
 describe("V0.6 adaptive runtime",()=>{
  it("rejects cycles and falls back to a valid deterministic DAG",async()=>{const bad=new SequenceProvider([{content:JSON.stringify({summary:"bad",tasks:[{id:"a",title:"a",description:"a",role:"coder",dependencies:["b"]},{id:"b",title:"b",description:"b",role:"coder",dependencies:["a"]}]})}]); const planner=new ModelAdaptivePlanner({provider:bad}); const p=await planner.plan({goal:"fix",availableRoles:["researcher","coder","tester"]}); expect(p.source).toBe("fallback"); expect(validatePlan(p,{goal:"fix",availableRoles:["researcher","coder","tester"]}).valid).toBe(true);});

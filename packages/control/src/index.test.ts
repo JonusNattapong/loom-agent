@@ -2,7 +2,7 @@ import {mkdtempSync,writeFileSync} from "node:fs";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
 import {afterEach,describe,expect,it} from "vitest";
-import {StateStore} from "@loom/state";
+import {StateStore} from "@loom-agent/state";
 import {ControlPlaneService,ControlServer,hashOperatorToken,type ControlState} from "./index.js";
 
 const servers:ControlServer[]=[];afterEach(async()=>{await Promise.all(servers.splice(0).map(server=>server.stop()))});

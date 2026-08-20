@@ -1,5 +1,5 @@
 /**
- * @loom/sdk — Public developer SDK for Loom V1.0.
+ * @loom-agent/sdk — Public developer SDK for Loom V1.0.
  *
  * The SDK is a stable facade over the existing durable Loom runtime. It does
  * NOT introduce a second runtime: createLoomApp composes StateStore, AgentLoop,
@@ -18,11 +18,11 @@ import type {
   Provider,
   Tool,
   PermissionLevel,
-} from "@loom/core";
-import {StateStore} from "@loom/state";
-import {ToolExecutor, ToolRegistry, createNativeTools, type ToolPolicy} from "@loom/tools";
-import {SkillRuntime} from "@loom/skills";
-import {MockProvider, OpenAICompatibleProvider} from "@loom/providers";
+} from "@loom-agent/core";
+import {StateStore} from "@loom-agent/state";
+import {ToolExecutor, ToolRegistry, createNativeTools, type ToolPolicy} from "@loom-agent/tools";
+import {SkillRuntime} from "@loom-agent/skills";
+import {MockProvider, OpenAICompatibleProvider} from "@loom-agent/providers";
 
 import {
   SDK_API_VERSION,
@@ -102,8 +102,8 @@ export interface LoomAppOptions {
   dbPath?: string;
   maxRounds?: number;
   maxConcurrent?: number;
-  controlPlane?: import("@loom/control").ControlOptions;
-  daemon?: Partial<import("@loom/daemon").DaemonOptions>;
+  controlPlane?: import("@loom-agent/control").ControlOptions;
+  daemon?: Partial<import("@loom-agent/daemon").DaemonOptions>;
 }
 
 export interface LoomAppRunOptions {
@@ -133,10 +133,10 @@ export class LoomApp {
   private readonly bots: BotDefinition[] = [];
   private policy: LoomPolicy;
   private provider: Provider;
-  private daemon?: import("@loom/daemon").Daemon;
-  private control?: {service: import("@loom/control").ControlPlaneService; server: import("@loom/control").ControlServer};
-  private optionsControl?: import("@loom/control").ControlOptions;
-  private daemonOpts?: Partial<import("@loom/daemon").DaemonOptions>;
+  private daemon?: import("@loom-agent/daemon").Daemon;
+  private control?: {service: import("@loom-agent/control").ControlPlaneService; server: import("@loom-agent/control").ControlServer};
+  private optionsControl?: import("@loom-agent/control").ControlOptions;
+  private daemonOpts?: Partial<import("@loom-agent/daemon").DaemonOptions>;
   private maxConcurrent = 2;
 
   constructor(options: LoomAppOptions = {}) {
@@ -227,8 +227,8 @@ export class LoomApp {
 
   /** Run a goal using the embedded (in-process) runtime. Does not require the daemon. */
   async run(options: LoomAppRunOptions): Promise<Agent> {
-    const {AgentLoop} = await import("@loom/runtime");
-    const {ContextCompiler} = await import("@loom/context");
+    const {AgentLoop} = await import("@loom-agent/runtime");
+    const {ContextCompiler} = await import("@loom-agent/context");
     const agentId = this.agentDefs.get(options.agent ?? "main")?.id ?? options.agent ?? "main";
     const def = this.agentDefs.get(agentId);
     const provider = this.getProvider(def?.provider);
@@ -259,9 +259,9 @@ export class LoomApp {
   /** Start the durable daemon + control plane (background mode). */
   async start(): Promise<{daemonId: string; controlUrl?: string}> {
     if (this.daemon) return {daemonId: this.daemon.daemonId};
-    const {Daemon} = await import("@loom/daemon");
-    const {AdaptiveOrchestrator} = await import("@loom/adaptive");
-    const runner: import("@loom/daemon").JobRunner = {
+    const {Daemon} = await import("@loom-agent/daemon");
+    const {AdaptiveOrchestrator} = await import("@loom-agent/adaptive");
+    const runner: import("@loom-agent/daemon").JobRunner = {
       run: async (job: any) => {
         const payload = typeof job.payload === "string" ? JSON.parse(job.payload) : job.payload;
         const root = job.rootAgentId ?? this.state.createAgentRecord({goal: payload.goal, role: "planner"}).id;
@@ -371,14 +371,14 @@ function resolveProvider(provider?: Provider | {id: string; model?: string; apiK
   throw new Error(`unknown provider id: ${id}. Register a provider via app.registerProvider().`);
 }
 
-async function startControlPlane(app: LoomApp, options: import("@loom/control").ControlOptions): Promise<{service: import("@loom/control").ControlPlaneService; server: import("@loom/control").ControlServer}> {
-  const {ControlPlaneService, ControlServer} = await import("@loom/control");
+async function startControlPlane(app: LoomApp, options: import("@loom-agent/control").ControlOptions): Promise<{service: import("@loom-agent/control").ControlPlaneService; server: import("@loom-agent/control").ControlServer}> {
+  const {ControlPlaneService, ControlServer} = await import("@loom-agent/control");
   const service = new ControlPlaneService(app.state, {});
   const server = new ControlServer(service, options);
   return {service, server};
 }
 
-function withAddress(server: import("@loom/control").ControlServer): string | undefined {
+function withAddress(server: import("@loom-agent/control").ControlServer): string | undefined {
   const addr = server.address();
   if (!addr) return undefined;
   const host = addr.address === "::" ? "localhost" : addr.address;

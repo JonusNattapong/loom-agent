@@ -1,4 +1,4 @@
-import type {Message,MemoryEntry,ToolDefinition} from "@loom/core";
+import type {Message,MemoryEntry,ToolDefinition} from "@loom-agent/core";
 export type ContextSource={name:string;content:string;priority:number;required?:boolean};
 export type ContextCompileInput={system?:string;goal:string;runtimeState?:string;messages?:Message[];memory?:MemoryEntry[];skills?:string[];files?:string[];tools?:ToolDefinition[];recovery?:string;maxChars?:number;trace?:(type:string,data:Record<string,unknown>)=>void};
 export type CompiledContext={messages:Message[];text:string;included:string[];excluded:string[];chars:number;maxChars:number};

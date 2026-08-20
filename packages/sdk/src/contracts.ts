@@ -1,5 +1,5 @@
 /**
- * @loom/sdk/contracts
+ * @loom-agent/sdk/contracts
  *
  * Stable public contracts for Loom V1.0.
  *
@@ -10,7 +10,7 @@
  * @experimental.
  *
  * Implementation note: these contracts intentionally reuse the primitive types
- * from @loom/core (Provider, Message, ToolDefinition, AgentRole, ...) so the
+ * from @loom-agent/core (Provider, Message, ToolDefinition, AgentRole, ...) so the
  * SDK is a thin, stable facade over the existing runtime rather than a second
  * runtime.
  */
@@ -25,9 +25,9 @@ import type {
   PermissionLevel,
   MemoryScope,
   Visibility,
-} from "@loom/core";
+} from "@loom-agent/core";
 
-export type {AgentRole, Message, Provider, ProviderRequest, ProviderResponse, ToolDefinition, Tool, PermissionLevel, MemoryScope, Visibility} from "@loom/core";
+export type {AgentRole, Message, Provider, ProviderRequest, ProviderResponse, ToolDefinition, Tool, PermissionLevel, MemoryScope, Visibility} from "@loom-agent/core";
 
 /** @stable SDK version tuple. Bump the minor for new stable additions. */
 export const SDK_API_VERSION = "1.1.0" as const;

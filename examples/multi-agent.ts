@@ -1,5 +1,5 @@
 // Public SDK only. Role-scoped agents + a registered tool.
-import {createLoomApp, defineAgent, defineTool} from "@loom/sdk";
+import {createLoomApp, defineAgent, defineTool} from "@loom-agent/sdk";
 
 const app = createLoomApp({
   name: "multi-example",

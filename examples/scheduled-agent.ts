@@ -1,6 +1,6 @@
 // Public SDK only. Starts the durable daemon. Recurring work is registered
 // with `loom schedules add` (see docs/scheduler.md).
-import {createLoomApp, defineAgent} from "@loom/sdk";
+import {createLoomApp, defineAgent} from "@loom-agent/sdk";
 
 const app = createLoomApp({
   name: "scheduled-example",

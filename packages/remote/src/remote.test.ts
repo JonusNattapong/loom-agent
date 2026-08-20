@@ -1,6 +1,6 @@
 import {describe,expect,it} from "vitest";
 import {DeterministicRouter,LeaseManager,SequenceJournal,WorkerRegistry,RemoteFabricController,assertFencingToken,normalizeCapabilities,ProtocolValidationError,createEnvelope,validateEnvelope} from "../src/index.js";
-import {StateStore} from "@loom/state";
+import {StateStore} from "@loom-agent/state";
 const identity=(workerId:string)=>({workerId,instanceId:`${workerId}-1`,trust:"trusted" as const});
 describe("remote protocol",()=>{
  it("normalizes capability names deterministically",()=>expect(normalizeCapabilities([{name:" Zeta ",roles:["Coder"],tools:["Shell"]},{name:"zeta",version:"2"},{name:"alpha"}])).toEqual({names:["alpha","zeta"],roles:["coder"],tools:["shell"],versions:{zeta:"2"}}));

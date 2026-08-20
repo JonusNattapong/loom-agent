@@ -1,4 +1,4 @@
-import {existsSync,writeFileSync,readFileSync} from "node:fs";import {StateStore} from "@loom/state";import {Daemon} from "./index.js";function crashNow(){// Force termination. SIGKILL string form is unsupported on Windows; use the
+import {existsSync,writeFileSync,readFileSync} from "node:fs";import {StateStore} from "@loom-agent/state";import {Daemon} from "./index.js";function crashNow(){// Force termination. SIGKILL string form is unsupported on Windows; use the
   // numeric signal there, and a clean exit elsewhere when available.
   if(process.platform==="win32")process.exit(137);
   else process.kill(process.pid,"SIGKILL");

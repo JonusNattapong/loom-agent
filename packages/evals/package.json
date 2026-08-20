@@ -1,12 +1,12 @@
 {
   "dependencies": {
-    "@loom/adaptive": "^1.1.0",
-    "@loom/coordinator": "^1.1.0",
-    "@loom/core": "^1.1.0",
-    "@loom/daemon": "^1.1.0",
-    "@loom/planner": "^1.1.0",
-    "@loom/state": "^1.1.0",
-    "@loom/tools": "^1.1.0"
+    "@loom-agent/adaptive": "^1.1.0",
+    "@loom-agent/coordinator": "^1.1.0",
+    "@loom-agent/core": "^1.1.0",
+    "@loom-agent/daemon": "^1.1.0",
+    "@loom-agent/planner": "^1.1.0",
+    "@loom-agent/state": "^1.1.0",
+    "@loom-agent/tools": "^1.1.0"
   },
   "engines": {
     "node": ">=22"
@@ -17,7 +17,7 @@
   ],
   "license": "MIT",
   "main": "dist/index.js",
-  "name": "@loom/evals",
+  "name": "@loom-agent/evals",
   "private": true,
   "publishConfig": {
     "access": "public"

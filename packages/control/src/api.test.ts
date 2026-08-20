@@ -1,7 +1,7 @@
 import {afterEach,describe,expect,it} from "vitest";
 import {readFileSync} from "node:fs";
 import {ControlPlaneService,ControlServer,hashOperatorToken,type ControlState} from "./index.js";
-import {StateStore} from "@loom/state";
+import {StateStore} from "@loom-agent/state";
 
 const servers: ControlServer[] = [];
 afterEach(async () => { await Promise.all(servers.splice(0).map((s) => s.stop())); });

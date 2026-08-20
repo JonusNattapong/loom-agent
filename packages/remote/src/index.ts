@@ -1,4 +1,4 @@
-import {LoomRouteRegistry,formatLoomAddress,parseLoomAddress,type LoomAddressLike} from "@loom/network";/** Versioned coordinator/remote-worker protocol primitives (V1.0). */
+import {LoomRouteRegistry,formatLoomAddress,parseLoomAddress,type LoomAddressLike} from "@loom-agent/network";/** Versioned coordinator/remote-worker protocol primitives (V1.0). */
 export const PROTOCOL_VERSION = "1.0" as const;
 
 export type ProtocolType = "register" | "heartbeat" | "dispatch" | "accepted" | "started" | "renew" | "ack" | "result" | "error" | "disconnect" | "cancel";

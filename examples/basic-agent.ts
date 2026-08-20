@@ -1,5 +1,5 @@
 // Public SDK only. Runs a single agent goal with the embedded runtime.
-import {createLoomApp, defineAgent} from "@loom/sdk";
+import {createLoomApp, defineAgent} from "@loom-agent/sdk";
 
 const app = createLoomApp({
   name: "basic-example",

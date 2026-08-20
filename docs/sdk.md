@@ -4,7 +4,7 @@ version: 1.0
 category: reference
 ---
 
-# Loom SDK (`@loom/sdk`)
+# Loom SDK (`@loom-agent/sdk`)
 
 The SDK is the **stable, public developer contract** for Loom V1.0. It is a
 facade over the existing durable runtime — it does **not** introduce a second
@@ -25,27 +25,27 @@ A V1.0 API is a promise, not a barrel-file accident.
 - **Experimental (`@experimental`):** the Agent Arena `WorldAdapter` /
   `FakeWorldAdapter` foundation and remote-worker transport details. These may
   change within a minor release; they are clearly marked.
-- **Internal:** anything under `@loom/*/dist/internal/...` or `*/private`. Never
+- **Internal:** anything under `@loom-agent/*/dist/internal/...` or `*/private`. Never
   import these from an application.
 
 ## Install
 
 ```bash
-npm install @loom/sdk
+npm install @loom-agent/sdk
 ```
 
 The SDK statically depends only on publishable packages
-(`@loom/core`, `@loom/state`, `@loom/tools`, `@loom/skills`, `@loom/providers`).
-Heavy runtime packages (`@loom/runtime`, `@loom/daemon`, `@loom/control`,
-`@loom/adaptive`, `@loom/context`, `@loom/remote`, `@loom/bots`,
-`@loom/network`, `@loom/coordinator`) are **optional peer dependencies** loaded
+(`@loom-agent/core`, `@loom-agent/state`, `@loom-agent/tools`, `@loom-agent/skills`, `@loom-agent/providers`).
+Heavy runtime packages (`@loom-agent/runtime`, `@loom-agent/daemon`, `@loom-agent/control`,
+`@loom-agent/adaptive`, `@loom-agent/context`, `@loom-agent/remote`, `@loom-agent/bots`,
+`@loom-agent/network`, `@loom-agent/coordinator`) are **optional peer dependencies** loaded
 lazily by `app.run()` / `app.start()`. You only need them installed if you call
 those methods.
 
 ## Minimal example
 
 ```ts
-import {createLoomApp, defineAgent} from "@loom/sdk";
+import {createLoomApp, defineAgent} from "@loom-agent/sdk";
 
 const app = createLoomApp({
   name: "my-app",

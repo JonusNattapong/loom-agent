@@ -1,15 +1,15 @@
 {
   "dependencies": {
-    "@loom/adaptive": "^1.1.0",
-    "@loom/core": "^1.1.0",
-    "@loom/state": "^1.1.0"
+    "@loom-agent/adaptive": "^1.1.0",
+    "@loom-agent/core": "^1.1.0",
+    "@loom-agent/state": "^1.1.0"
   },
   "engines": {
     "node": ">=22"
   },
   "license": "MIT",
   "main": "dist/index.js",
-  "name": "@loom/daemon",
+  "name": "@loom-agent/daemon",
   "publishConfig": {
     "access": "public"
   },

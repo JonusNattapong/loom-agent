@@ -2,9 +2,9 @@ import {describe,expect,it} from "vitest";
 import {mkdtempSync,readFileSync,existsSync} from "node:fs";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
-import {StateStore} from "@loom/state";
+import {StateStore} from "@loom-agent/state";
 import {RemoteFabricController,hashWorkerToken,WebSocketControllerTransport,WebSocketWorkerTransport,RemoteWorkerRuntime} from "./index.js";
-import {ToolExecutor,ToolRegistry} from "@loom/tools";
+import {ToolExecutor,ToolRegistry} from "@loom-agent/tools";
 
 const wait=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
 const waitFor=async(check:()=>boolean,timeout=3000)=>{const deadline=Date.now()+timeout;while(Date.now()<deadline){if(check())return;await wait(10);}throw new Error("websocket test timeout");};

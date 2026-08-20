@@ -1,11 +1,11 @@
-import type {AgentResult} from "@loom/core";
-import {AgentCoordinator,MultiAgentRuntime} from "@loom/coordinator";
-import {PlanEngine,VerifiedExecutionRuntime} from "@loom/planner";
-import {StateStore} from "@loom/state";
-import {ToolExecutor,ToolRegistry} from "@loom/tools";
-import {ModelAdaptivePlanner,MultiRoundExecutor,selectRole} from "@loom/adaptive";
-import type {Provider,ProviderResponse} from "@loom/core";
-import {Daemon} from "@loom/daemon";
+import type {AgentResult} from "@loom-agent/core";
+import {AgentCoordinator,MultiAgentRuntime} from "@loom-agent/coordinator";
+import {PlanEngine,VerifiedExecutionRuntime} from "@loom-agent/planner";
+import {StateStore} from "@loom-agent/state";
+import {ToolExecutor,ToolRegistry} from "@loom-agent/tools";
+import {ModelAdaptivePlanner,MultiRoundExecutor,selectRole} from "@loom-agent/adaptive";
+import type {Provider,ProviderResponse} from "@loom-agent/core";
+import {Daemon} from "@loom-agent/daemon";
 
 export type EvalResult={name:string;passed:boolean;details:string};
 

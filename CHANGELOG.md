@@ -27,11 +27,11 @@ platform with versioned public developer contracts. It does **not** add another
 large distributed-systems subsystem.
 
 ### Added
-- `@loom/sdk` (1.0.0): stable public developer SDK — `defineAgent`,
+- `@loom-agent/sdk` (1.0.0): stable public developer SDK — `defineAgent`,
   `defineTool`, `defineSkill`, `defineBot`, `createLoomApp`, `defineLoomApp`,
   `LoomApp`, plus stable contract types. Heavy runtime packages are optional
   peer dependencies loaded lazily.
-- `@loom/config` (1.0.0): versioned config schema (`schemaVersion: 1`),
+- `@loom-agent/config` (1.0.0): versioned config schema (`schemaVersion: 1`),
   helpful validation errors with JSON-pointer-style paths, precedence
   (CLI > env > project > user > defaults), and `writeStarterConfig`.
 - CLI productization: `loom init`, `loom doctor` (`--json`), `loom version` /

@@ -31,18 +31,18 @@ flowchart TD
 
 | Package | Responsibility |
 | --- | --- |
-| `@loom/core` | Shared lifecycle, delegation, message, result, lease, memory, and trace contracts. |
-| `@loom/state` | SQLite migrations v1–v5, transactions, durable records, and queries. |
-| `@loom/planner` | Plan creation, dependency scheduling, V0.3 verified execution, retries, and recovery. |
-| `@loom/coordinator` | Agent registry operations, roles, context isolation, A2A bus, delegation, bounded coordination, recovery, and cancellation. |
-| `@loom/tools` | Tool registry, permissions, approvals, idempotency, result limits, and native tools. |
-| `@loom/providers` | Mock and OpenAI-compatible provider normalization. |
-| `@loom/context` | Priority-based context compilation. |
-| `@loom/skills` | Project skill discovery. |
-| `@loom/mcp` | Stdio MCP discovery and tool adaptation. |
-| `@loom/runtime` | V0.2-compatible `AgentLoop`. |
-| `@loom/evals` | V0.3 regression and V0.4 multi-agent scenarios. |
-| `@loom/cli` | Config, service wiring, commands, and output. |
+| `@loom-agent/core` | Shared lifecycle, delegation, message, result, lease, memory, and trace contracts. |
+| `@loom-agent/state` | SQLite migrations v1–v5, transactions, durable records, and queries. |
+| `@loom-agent/planner` | Plan creation, dependency scheduling, V0.3 verified execution, retries, and recovery. |
+| `@loom-agent/coordinator` | Agent registry operations, roles, context isolation, A2A bus, delegation, bounded coordination, recovery, and cancellation. |
+| `@loom-agent/tools` | Tool registry, permissions, approvals, idempotency, result limits, and native tools. |
+| `@loom-agent/providers` | Mock and OpenAI-compatible provider normalization. |
+| `@loom-agent/context` | Priority-based context compilation. |
+| `@loom-agent/skills` | Project skill discovery. |
+| `@loom-agent/mcp` | Stdio MCP discovery and tool adaptation. |
+| `@loom-agent/runtime` | V0.2-compatible `AgentLoop`. |
+| `@loom-agent/evals` | V0.3 regression and V0.4 multi-agent scenarios. |
+| `@loom-agent/cli` | Config, service wiring, commands, and output. |
 
 ## Coordination sequence
 

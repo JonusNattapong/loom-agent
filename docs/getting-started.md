@@ -14,11 +14,11 @@ versioned public contracts.
 ## 0. Quickstart with the public SDK (new in V1.0)
 
 ```bash
-npm install @loom/sdk
+npm install @loom-agent/sdk
 ```
 
 ```ts
-import {createLoomApp, defineAgent} from "@loom/sdk";
+import {createLoomApp, defineAgent} from "@loom-agent/sdk";
 
 const app = createLoomApp({
   name: "hello",

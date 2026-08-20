@@ -1,6 +1,6 @@
 import {spawn,ChildProcessWithoutNullStreams} from "node:child_process";
 import {createInterface} from "node:readline";
-import type {Tool,ToolDefinition} from "@loom/core";
+import type {Tool,ToolDefinition} from "@loom-agent/core";
 type ServerConfig={command:string;args?:string[];env?:Record<string,string>};
 export class McpClient{private child?:ChildProcessWithoutNullStreams;private next=1;private pending=new Map<number,(v:any)=>void>();private tools:ToolDefinition[]=[];constructor(private readonly config:ServerConfig,private readonly trace?:(type:string,data:Record<string,unknown>)=>void){}
  async connect(){this.trace?.("mcp.connect.started",{command:this.config.command});this.child=spawn(this.config.command,this.config.args??[],{shell:true,env:{...process.env,...this.config.env}});const rl=createInterface({input:this.child.stdout});rl.on("line",line=>{try{const m=JSON.parse(line);const resolve=this.pending.get(m.id);if(resolve){this.pending.delete(m.id);resolve(m.result??m.error);}}catch{}});await this.request("initialize",{protocolVersion:"2024-11-05",capabilities:{},clientInfo:{name:"loom",version:"0.2.0"}});const result=await this.request("tools/list",{});this.tools=(result?.tools??[]).map((t:any)=>({name:t.name,description:t.description??"",inputSchema:t.inputSchema}));for(const t of this.tools)this.trace?.("mcp.tool.discovered",{name:t.name});this.trace?.("mcp.connect.completed",{tools:this.tools.length});return this;}

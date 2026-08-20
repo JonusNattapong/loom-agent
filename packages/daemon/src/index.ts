@@ -1,4 +1,4 @@
-import {randomUUID} from "node:crypto";import os from "node:os";import type {Provider} from "@loom/core";import {AdaptiveOrchestrator} from "@loom/adaptive";import {StateStore} from "@loom/state";
+import {randomUUID} from "node:crypto";import os from "node:os";import type {Provider} from "@loom-agent/core";import {AdaptiveOrchestrator} from "@loom-agent/adaptive";import {StateStore} from "@loom-agent/state";
 export interface ControlPlaneLifecycle {start():Promise<void>;stop():Promise<void>}
 export interface ScheduleInput {name?:string;kind:string;expression:string;timezone:string;payload:unknown;misfirePolicy?:string;overlapPolicy?:string;nextRunAt?:number;}
 export interface DaemonOptions {heartbeatIntervalMs?:number;staleAfterMs?:number;leaseMs?:number;pollMs?:number;maxConcurrentJobs?:number;shutdownGraceMs?:number;provider?:Provider;jobRunner?:JobRunner;botSupervisor?:BotSupervisor;controlPlane?:ControlPlaneLifecycle;}

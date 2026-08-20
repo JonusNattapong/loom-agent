@@ -14,7 +14,7 @@ npm audit          # dependency audit (must be 0 vulns before merge)
 
 ## API stability rules
 
-- **Public** exports in `@loom/sdk` are a promise (see `docs/versioning.md`).
+- **Public** exports in `@loom-agent/sdk` are a promise (see `docs/versioning.md`).
   Removing or renaming one is a breaking change: bump the major and document it
   in `CHANGELOG.md`. The public API snapshot test will fail CI if you remove a
   stable export by accident.

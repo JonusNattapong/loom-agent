@@ -4,7 +4,7 @@ A route is the current, transient way the controller can reach a stable [`loom:/
 
 ## Route descriptors
 
-`@loom/network` defines descriptors with:
+`@loom-agent/network` defines descriptors with:
 
 - `target`: a structured Loom address;
 - `transport`: `controller-websocket`, `relay`, or `direct`;

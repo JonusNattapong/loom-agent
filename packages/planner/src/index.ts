@@ -1,5 +1,5 @@
-import type {ExecutionPhase,FailurePolicy,Plan,PlanTask} from "@loom/core";
-import {StateStore} from "@loom/state";
+import type {ExecutionPhase,FailurePolicy,Plan,PlanTask} from "@loom-agent/core";
+import {StateStore} from "@loom-agent/state";
 
 export type TaskExecutionResult={result:string;artifacts?:Array<{path:string;operation:"created"|"modified"|"deleted"}>;failurePolicy?:FailurePolicy};
 export type VerificationResult={passed:boolean;summary:string;failurePolicy?:FailurePolicy};

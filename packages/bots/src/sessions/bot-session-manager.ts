@@ -4,7 +4,7 @@
  * Represents continuity between an external conversation context and Loom.
  * Persisted in SQLite for crash recovery and resume.
  */
-import { StateStore } from "@loom/state";
+import { StateStore } from "@loom-agent/state";
 
 export interface BotSession {
   id: string;

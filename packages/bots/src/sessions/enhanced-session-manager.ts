@@ -4,7 +4,7 @@
  * Manages persistent bot sessions with deterministic session key generation
  * and strict isolation between different users/channels/threads.
  */
-import { StateStore } from "@loom/state";
+import { StateStore } from "@loom-agent/state";
 import { BotSession, BotSessionManager } from "./bot-session-manager";
 import { BotEvent, BotEventType } from "../types";
 

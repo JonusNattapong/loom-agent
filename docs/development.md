@@ -30,7 +30,7 @@ Append a numbered `applyMigration` call. Never rewrite an applied migration. Use
 
 1. Add or extend the shared state type.
 2. Persist the transition in `StateStore`.
-3. Implement graph behavior in `@loom/planner` or multi-agent ownership/recovery in `@loom/coordinator`.
+3. Implement graph behavior in `@loom-agent/planner` or multi-agent ownership/recovery in `@loom-agent/coordinator`.
 4. Add a focused unit test and, when user-visible, a fixed eval scenario.
 5. Update CLI output and documentation.
 

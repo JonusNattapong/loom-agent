@@ -11,7 +11,7 @@
     "node": ">=22"
   },
   "license": "MIT",
-  "name": "@loom/web",
+  "name": "@loom-agent/web",
   "private": true,
   "publishConfig": {
     "access": "public"

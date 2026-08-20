@@ -1,4 +1,4 @@
 import {describe,it,expect} from "vitest";
-import {StateStore} from "@loom/state";
+import {StateStore} from "@loom-agent/state";
 import {PlanEngine,VerifiedExecutionRuntime} from "./index.js";
 describe("task checkpoints",()=>{it("creates durable checkpoints and links artifacts",async()=>{const state=new StateStore(":memory:");const agent=state.createAgent("create file","a");const plan=new PlanEngine(state).create(agent.id,agent.task);const runtime=new VerifiedExecutionRuntime(state,{execute:async task=>({result:"done",artifacts:task.kind==="execute"?[{path:"new.txt",operation:"created" as const}]:[]})},{verify:async()=>({passed:true,summary:"verified"})});await runtime.run(plan.id);const checkpoint=state.latestTaskCheckpoint(agent.id);const artifact=state.listArtifacts(agent.id)[0];expect(checkpoint?.id).toMatch(/^cp_/);expect(artifact.checkpointId).toMatch(/^cp_/);expect(state.getTaskCheckpoint(artifact.checkpointId!)?.taskId).toBe(artifact.taskId);});});

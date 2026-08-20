@@ -1,6 +1,6 @@
-import type {AgentRole, Message, Provider, ProviderRequest, ProviderResponse, ToolCall, PlanTask} from "@loom/core";
-import {StateStore} from "@loom/state";
-import {VerifiedExecutionRuntime} from "@loom/planner";
+import type {AgentRole, Message, Provider, ProviderRequest, ProviderResponse, ToolCall, PlanTask} from "@loom-agent/core";
+import {StateStore} from "@loom-agent/state";
+import {VerifiedExecutionRuntime} from "@loom-agent/planner";
 
 export interface CompletionCriterion {type:"file_exists"|"test_passes"|"review";path?:string;command?:string;}
 export type Capability = "repository-reading"|"code-editing"|"testing"|"research"|"review"|"shell"|"MCP"|"filesystem";

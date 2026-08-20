@@ -24,18 +24,18 @@ Node.js 22+ provides `node:sqlite`. Bun is supported for development and `bun:sq
 
 ## Packages
 
-- `@loom/core`: lifecycle, role, message, result, lease, artifact, memory, and trace contracts.
-- `@loom/state`: migrations v1–v5, transactions, durable state, and the tool ledger.
-- `@loom/planner`: deterministic plans, dependencies, V0.3 verified execution, and graph recovery.
-- `@loom/coordinator`: roles, child lifecycle, delegation, A2A, context isolation, bounded execution, recovery, and cancellation.
-- `@loom/tools`: registry, native tools, permission/approval middleware, idempotency, timeout, path safety, and result limits.
-- `@loom/providers`: mock and OpenAI-compatible adapters.
-- `@loom/context`: priority-based context compiler.
-- `@loom/skills`: project skill discovery.
-- `@loom/mcp`: local stdio MCP adapter.
-- `@loom/runtime`: legacy `AgentLoop` compatibility path.
-- `@loom/evals`: six V0.3 regression scenarios and eight V0.4 coordination scenarios.
-- `@loom/cli`: config, command parsing, service wiring, and output.
+- `@loom-agent/core`: lifecycle, role, message, result, lease, artifact, memory, and trace contracts.
+- `@loom-agent/state`: migrations v1–v5, transactions, durable state, and the tool ledger.
+- `@loom-agent/planner`: deterministic plans, dependencies, V0.3 verified execution, and graph recovery.
+- `@loom-agent/coordinator`: roles, child lifecycle, delegation, A2A, context isolation, bounded execution, recovery, and cancellation.
+- `@loom-agent/tools`: registry, native tools, permission/approval middleware, idempotency, timeout, path safety, and result limits.
+- `@loom-agent/providers`: mock and OpenAI-compatible adapters.
+- `@loom-agent/context`: priority-based context compiler.
+- `@loom-agent/skills`: project skill discovery.
+- `@loom-agent/mcp`: local stdio MCP adapter.
+- `@loom-agent/runtime`: legacy `AgentLoop` compatibility path.
+- `@loom-agent/evals`: six V0.3 regression scenarios and eight V0.4 coordination scenarios.
+- `@loom-agent/cli`: config, command parsing, service wiring, and output.
 
 Keep reusable coordination out of the CLI. Preserve the V0.3 runtime unless a compatibility change is required.
 

@@ -7,7 +7,7 @@ import type {
   DelegationStatus, ExecutionPhase, FailurePolicy, MemoryEntry, MemoryScope,
   Message, Plan, PlanTask, TaskCheckpoint, TaskLease, TaskStatus, TraceCorrelation,
   TraceEvent, Visibility,
-} from "@loom/core";
+} from "@loom-agent/core";
 
 type Statement={run(...args:unknown[]):unknown;get(...args:unknown[]):unknown;all(...args:unknown[]):unknown[]};
 type Database={exec(sql:string):void;prepare(sql:string):Statement;pragma(sql:string):unknown;close?():void};

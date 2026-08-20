@@ -1,4 +1,4 @@
 import {describe,it,expect} from "vitest";
-import {StateStore} from "@loom/state";
+import {StateStore} from "@loom-agent/state";
 import {PlanEngine,VerifiedExecutionRuntime} from "./index.js";
 describe("approval denial",()=>{it("fails the plan without replaying the task",async()=>{const state=new StateStore(":memory:");const agent=state.createAgent("do work","a");const plan=new PlanEngine(state).create(agent.id,agent.task);let calls=0;const runtime=new VerifiedExecutionRuntime(state,{execute:async task=>{calls++;const request=state.createApproval({agentId:agent.id,taskId:task.id,toolCallId:"call",toolName:"shell",input:{}});const error=new Error(request.id) as Error&{failurePolicy:string};error.failurePolicy="needs_approval";throw error;}},{verify:async()=>({passed:true,summary:"ok"})});await runtime.run(plan.id);state.resolveApproval(state.listApprovals(agent.id)[0].id,"denied");expect((await runtime.resume(agent.id)).status).toBe("failed");expect(calls).toBe(1);});});

@@ -10,7 +10,7 @@
  * - trace
  * - acknowledge
  */
-import { StateStore } from "@loom/state";
+import { StateStore } from "@loom-agent/state";
 import { EventDedup } from "./events/dedup-store";
 import { BotEvent, BotEventType } from "../types";
 

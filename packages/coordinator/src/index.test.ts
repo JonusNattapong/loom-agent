@@ -1,7 +1,7 @@
 import {describe,expect,it} from "vitest";
-import type {AgentResult,PlanTask} from "@loom/core";
-import {PlanEngine} from "@loom/planner";
-import {StateStore} from "@loom/state";
+import type {AgentResult,PlanTask} from "@loom-agent/core";
+import {PlanEngine} from "@loom-agent/planner";
+import {StateStore} from "@loom-agent/state";
 import {AgentCoordinator,MultiAgentRuntime} from "./index.js";
 
 function setup(goal="create file"){

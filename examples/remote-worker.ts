@@ -1,6 +1,6 @@
 // Public SDK only. Documents the remote-worker connection contract. The worker
 // is started by the CLI (`loom worker`) or the daemon coordinator.
-import {type LoomAddress, type LoomRoute} from "@loom/sdk";
+import {type LoomAddress, type LoomRoute} from "@loom-agent/sdk";
 
 const workerAddress: LoomAddress = "loom://worker/gpu-01";
 const route: LoomRoute = {address: workerAddress, workerId: "gpu-01", connectionEpoch: 1};

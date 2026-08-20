@@ -1,6 +1,6 @@
-import type {Provider} from "@loom/core";
-import {StateStore} from "@loom/state";
-import {AdaptiveOrchestrator} from "@loom/adaptive";
+import type {Provider} from "@loom-agent/core";
+import {StateStore} from "@loom-agent/state";
+import {AdaptiveOrchestrator} from "@loom-agent/adaptive";
 import type {AdaptiveBotRunner} from "./events/hardened-event-gateway";
 
 export function createAdaptiveBotRunner(state:StateStore,provider:Provider):AdaptiveBotRunner {

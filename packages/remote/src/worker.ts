@@ -2,8 +2,8 @@ import {mkdirSync,readFileSync,writeFileSync,realpathSync,statSync} from "node:f
 import {randomUUID} from "node:crypto";
 import {WebSocketWorkerTransport,WebSocketWorkerOptions} from "./transport.js";
 import {ProtocolEnvelope} from "./index.js";
-import {StateStore} from "@loom/state";
-import {ToolExecutor,createNativeTools} from "@loom/tools";
+import {StateStore} from "@loom-agent/state";
+import {ToolExecutor,createNativeTools} from "@loom-agent/tools";
 
 export type RemoteWorkerRuntimeOptions=Omit<WebSocketWorkerOptions,"worker">&{workerId:string;stateFile?:string;workspaceRoot?:string;workspaceId?:string;allowedTools?:string[];allowShell?:boolean;leaseRenewMs?:number;state?:StateStore;executor?:ToolExecutor;onAssignment?:(envelope:ProtocolEnvelope)=>Promise<void>|void};
 export type RemoteExecutionRecord={status:"running"|"completed"|"failed"|"cancelled";result?:string;error?:string;toolCallId?:string};

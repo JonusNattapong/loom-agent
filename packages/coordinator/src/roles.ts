@@ -1,6 +1,6 @@
 import {promises as fs} from "node:fs";
 import {join} from "node:path";
-import type {AgentRole,RoleDefinition} from "@loom/core";
+import type {AgentRole,RoleDefinition} from "@loom-agent/core";
 
 const definitions:Record<AgentRole,RoleDefinition>={
   planner:{role:"planner",instructions:"Plan work, delegate bounded tasks, and aggregate verified results.",allowedTools:["read_file","shell"],allowedSkills:[],completionCriteria:["All delegated work is persisted","Required verification passed"]},

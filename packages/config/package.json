@@ -21,7 +21,7 @@
   ],
   "license": "MIT",
   "main": "dist/index.js",
-  "name": "@loom/config",
+  "name": "@loom-agent/config",
   "publishConfig": {
     "access": "public"
   },

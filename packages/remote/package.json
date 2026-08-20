@@ -1,12 +1,13 @@
 {
   "name": "@loom/remote",
-  "version": "0.8.1",
+  "version": "0.9.0",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "dependencies": {
     "@loom/state": "0.1.0",
     "ws": "^8.21.3",
-    "@loom/tools": "0.1.0"
+    "@loom/tools": "0.1.0",
+    "@loom/network": "file:../network"
   }
 }

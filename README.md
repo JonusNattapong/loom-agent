@@ -1,10 +1,10 @@
 # Loom Agent
 
-Loom is a CLI-first **local durable multi-agent runtime** for developer tasks. V0.4 coordinates a root planner and bounded child agents through persisted task graphs, delegation, task leases, an internal A2A message bus, isolated context and memory, structured result handoff, verified execution, approvals, and crash recovery.
+Loom is a CLI-first durable multi-agent runtime for developer tasks. **V0.9** adds an authenticated operator control plane and web UI, a versioned JSON/SSE API, stable `loom://` resource identities, and an inspectable route model on top of the existing planning, approvals, daemon, scheduler, and remote-worker runtime.
 
-> Milestone: **Loom Agent V0.4 — Multi-Agent & A2A Runtime**
+> Milestone: **Loom Agent V0.9 — Operator Control Plane & Logical Addressing**
 
-V0.4 remains local and single-process. It does not include remote workers, distributed networking, a daemon, scheduler, web UI, desktop UI, vector memory, or a security sandbox.
+Loom remains a controller-oriented runtime backed by local SQLite. V0.9 does not provide NAT traversal, P2P transport, a VPN, relay transport, a mesh, consensus, or distributed storage.
 
 ## Requirements
 
@@ -12,37 +12,32 @@ V0.4 remains local and single-process. It does not include remote workers, distr
 - Bun 1.x for installation and development
 - Git for repository inspection and diff review
 
-## Quickstart
+## Quick start
 
 ```bash
 bun install
 npm run build
-npm test
-npm run eval
-
-npm run loom -- run "fix all failing tests" --max-agents 2
-npm run loom -- agents
-npm run loom -- inspect <root-agent-id>
+npm run loom -- operator token create --name local-admin
+npm run loom -- daemon start
 ```
+
+The token is printed once. Open <http://127.0.0.1:4777> and paste it into the login page. Installed/package users can run `loom operator token create` and `loom daemon start` directly.
+
+The control listener defaults to localhost (`127.0.0.1:4777`). `LOOM_CONTROL_HOST` and `LOOM_CONTROL_PORT` override `.loom/config.json`. Non-local listeners are refused unless native TLS, an HTTPS public origin, secure cookies, and an exact origin allowlist are all configured; see [Control plane](docs/control-plane.md).
 
 Loom stores state in `.loom/loom.db`. Set `LOOM_DB` to use an isolated database.
 
-## Agent tree and recovery
+## CLI execution and recovery
 
 ```bash
-npm run loom -- run "create a release note" --max-agents 2 --max-tasks 1
-npm run loom -- agents <root-agent-id>
-npm run loom -- delegations <root-agent-id>
-npm run loom -- messages <child-agent-id>
+npm run loom -- run "fix all failing tests" --max-agents 2
+npm run loom -- agents
+npm run loom -- inspect <root-agent-id>
 npm run loom -- trace <root-agent-id>
 npm run loom -- resume <root-agent-id>
 ```
 
-`loom inspect` shows the root plan, agent tree, task owners, delegations, artifacts, approvals, failures, and latest task checkpoint. Resume reconstructs unfinished children and consumes persisted results without creating duplicate delegations.
-
-## Approval flow
-
-Set a tool permission to `ask` in `.loom/config.json`. A restricted child pauses with a durable approval record.
+Set a tool permission to `ask` in `.loom/config.json` to create durable approval requests:
 
 ```bash
 npm run loom -- approvals <root-agent-id>
@@ -50,47 +45,42 @@ npm run loom -- approve <request-id>
 npm run loom -- resume <root-agent-id>
 ```
 
-Use `deny` to reject the operation. Role tool policies can only narrow project permissions; child agents do not bypass V0.3 tool middleware.
+## Remote workers
 
-## Documentation
+Workers use authenticated outbound WebSockets and pre-provisioned local workspaces:
+
+```bash
+loom worker token create
+LOOM_WORKER_TOKEN=... loom worker start --id worker-dev   --controller ws://127.0.0.1:4778/v1/workers/connect
+```
+
+Use `wss://` for remote deployments. Controller and worker policies intersect; a controller cannot grant a tool denied locally. Loom does not synchronize files. A connected worker has a transient controller-WebSocket route associated with its stable `loom://worker/<id>` identity.
+
+## V0.9 documentation
+
+- [Control plane and secure deployment](docs/control-plane.md)
+- [Control API and SSE](docs/control-api.md)
+- [Operator authentication](docs/operator-auth.md)
+- [`loom://` addressing](docs/loom-addressing.md)
+- [Route model](docs/routes.md)
+
+## Other documentation
 
 - [Getting started](docs/getting-started.md)
 - [Architecture](docs/architecture.md)
-- [Local multi-agent runtime](docs/multi-agent.md)
-- [Delegation, leasing, and result handoff](docs/delegation.md)
-- [Local A2A message bus](docs/a2a.md)
-- [Multi-agent recovery and cancellation](docs/multi-agent-recovery.md)
 - [CLI reference](docs/cli.md)
 - [Configuration](docs/configuration.md)
-- [Task graph and verification](docs/task-graph.md)
-- [State and migrations](docs/state-and-recovery.md)
-- [Tracing](docs/tracing.md)
+- [Adaptive planning](docs/adaptive-planning.md)
+- [Local multi-agent runtime](docs/multi-agent.md)
+- [Daemon and jobs](docs/daemon.md)
+- [Scheduler](docs/scheduler.md)
+- [Remote deployment](docs/remote-deployment.md)
 - [Security](docs/security.md)
-- [Evaluation harness](docs/evals.md)
 - [Package API reference](docs/api-reference.md)
 - [Known limitations](docs/limitations.md)
 
-Additional provider, skills, MCP, and development guides are under [`docs/`](docs/). Agent-oriented entry points are [llms.txt](llms.txt) and [llms-full.txt](llms-full.txt).
+Additional guides are under [`docs/`](docs/). Agent-oriented entry points are [llms.txt](llms.txt) and [llms-full.txt](llms-full.txt).
 
 ## License
 
 No license file is currently included. Treat the repository as source-available only until the project adds one.
-
-## V0.6 adaptive execution
-
-Loom now includes model-assisted planning, capability-aware deterministic routing, bounded multi-round provider execution, semantic review, repair-ready review results, and targeted verification in `@loom/adaptive`. Runtime policy remains authoritative: model output is validated, tool permissions and approvals are unchanged, and deterministic fallback is used when structured model output is unavailable. See `docs/adaptive-planning.md`, `docs/semantic-review.md`, `docs/model-routing.md`, and `docs/verification.md`.
-
-## V0.7 daemon and background runtime
-
-Loom V0.7 adds a durable local foreground daemon, SQLite-backed jobs and schedules, transactional occurrence dedupe, leases, bounded retries, restart recovery, and CLI inspection. Scheduled work enters the same adaptive orchestration pipeline as `loom run`; this is a restart-resumable local runtime, not a distributed scheduler or exactly-once network system. See `docs/daemon.md`, `docs/jobs.md`, `docs/scheduler.md`, and `docs/background-runtime.md`.
-
-## Remote worker execution (V0.8.1)
-
-Workers use an outbound WebSocket and a pre-provisioned local workspace. For local development:
-
-```bash
-loom worker token create
-LOOM_WORKER_TOKEN=... loom worker start --id worker-dev --controller ws://127.0.0.1:4778/v1/workers/connect
-```
-
-For remote deployments use `wss://`, keep tokens in environment variables, and configure worker-local `workspace` and `allowedTools`. Controller and worker policies intersect; the controller cannot grant a tool denied locally. Loom does not synchronize files or provide P2P/NAT traversal.

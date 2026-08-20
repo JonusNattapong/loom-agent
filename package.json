@@ -13,14 +13,18 @@
     "test:watch": "vitest",
     "eval": "tsx packages/evals/src/cli.ts",
     "check:packages": "node scripts/check-package-graph.mjs",
+    "release:version": "changeset version",
+    "release:publish": "npm run build && npm publish --workspaces --access public --provenance",
     "loom": "tsx packages/cli/src/index.ts",
     "test:web": "npm -w @loom/web test"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.31.1",
     "@types/node": "^22.10.2",
     "@types/ws": "^8.18.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
-    "vitest": "^3.2.7"
+    "vitest": "^3.2.7",
+    "@changesets/cli": "^2.31.1"
   }
 }

@@ -541,7 +541,7 @@ export class Editor implements Component, Focusable {
 	}
 
 	protected getAutocompleteAnchorMarker(): string {
-		return this.autocompleteOverlay && this.focused ? this.autocompleteAnchorMarker : "";
+		return this.autocompleteState && this.autocompleteOverlay && this.focused ? this.autocompleteAnchorMarker : "";
 	}
 
 	render(width: number): string[] {
@@ -615,7 +615,10 @@ export class Editor implements Component, Focusable {
 		}
 		// Render each visible layout line
 		// Emit hardware cursor marker only when focused and not showing autocomplete
-		const emitCursorMarker = this.focused && !this.autocompleteState;
+		// APC cursor markers are only safe when the TUI is positioning a real
+		// hardware cursor. Some terminals render the marker bytes as visible
+		// control glyphs, so never emit them in the default fake-cursor mode.
+		const emitCursorMarker = this.focused && !this.autocompleteState && this.tui.getShowHardwareCursor();
 
 		for (let visibleLineIndex = 0; visibleLineIndex < visibleLines.length; visibleLineIndex++) {
 			const layoutLine = visibleLines[visibleLineIndex]!;

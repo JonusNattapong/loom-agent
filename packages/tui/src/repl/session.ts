@@ -405,13 +405,8 @@ export class LoomReplSession {
             `  ${chalk.bold("/statusline")}  Set up status line UI layout and badges`,
             `  ${chalk.bold("/clear")}       Clear transcript and re-render header`,
             `  ${chalk.bold("/exit")}        Exit REPL`,
-            `  ${chalk.bold("/announcements")} Show runtime announcements`,
           ].join("\n") + "\n"
         );
-        break;
-
-      case "/announcements":
-        this.notify("info", "Announcements: provider selection, approval mode, retries, and execution status are shown inline.");
         break;
 
       case "/statusline": {

@@ -8,7 +8,7 @@
     "packages/bots"
   ],
   "scripts": {
-    "build": "tsc -b packages/config packages/core packages/state packages/providers packages/tools packages/context packages/skills packages/mcp packages/planner packages/coordinator packages/runtime packages/adaptive packages/network packages/remote packages/daemon packages/control packages/evals packages/cli packages/sdk packages/bots && npm -w @loom/web run build",
+    "build": "tsc -b && npm -w @loom/web run build",
     "test": "vitest run",
     "test:watch": "vitest",
     "eval": "tsx packages/evals/src/cli.ts",

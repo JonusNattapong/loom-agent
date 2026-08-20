@@ -26,7 +26,7 @@ import { SettingsMultiTabDialog, type SettingsTab } from "./settings-tab-dialog.
 import { OAuthLoginDialog } from "./oauth-dialog.js";
 import { ApiKeyPromptDialog } from "./api-key-dialog.js";
 import { computeRealCompanionStats, formatRealCompanionSummary } from "./companion-stats.js";
-import { createProvider, fetchAllConfiguredModels } from "@loom-agent/providers";
+import { createProvider, fetchModelsForProvider } from "@loom-agent/providers";
 
 export interface ReplSessionOptions {
   state: StateStore;
@@ -577,8 +577,8 @@ export class LoomReplSession {
       handle = this.tui.showOverlay(dialog, { width: "85%", maxHeight: 24 });
       this.tui.requestRender();
 
-      // Dynamically fetch live models from configured APIs / SDKs in the background
-      void fetchAllConfiguredModels()
+      // Fetch only models for the active provider; never show unrelated fallback providers.
+      void fetchModelsForProvider(this.options.provider.name)
         .then((remoteModels) => {
           if (remoteModels && remoteModels.length > 0) {
             const modelItems = remoteModels.map((m) => ({

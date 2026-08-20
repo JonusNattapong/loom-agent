@@ -51,7 +51,7 @@ const skipped=new Set(["--json","--tree","--skill",skillIndex>=0?argv[skillIndex
 const args=argv.slice(1).filter(value=>!skipped.has(value));const state=new StateStore();const registry=createNativeTools(process.cwd());
 
 async function loadTools(){for(const [name,server] of Object.entries(cfg.mcpServers??{})){try{const client=await new McpClient(server,(type,data)=>console.error(`[${type}]`,data)).connect();for(const tool of mcpTools(client))registry.register(tool);}catch(error){console.error(`MCP server ${name} unavailable: ${error instanceof Error?error.message:error}`);}}return registry;}
-function loadProvider():Provider{return createProvider(cfg.provider??process.env.LOOM_PROVIDER??"mock");}
+function loadProvider():Provider{return createProvider(cfg.provider??process.env.LOOM_PROVIDER);}
 function output(value:unknown,human?:string){console.log(json?JSON.stringify(value,null,2):human??(typeof value==="string"?value:JSON.stringify(value,null,2)));}
 function getVersionInfo(){return {loom:"1.0.0",sdk:SDK_API_VERSION,protocol:PROTOCOL_MAJOR,schema:SCHEMA_VERSION,node:process.version};}
 
@@ -80,11 +80,12 @@ async function doctor():Promise<DoctorReport>{
   // Config validity
   try{const {config,source}=await loadLoomConfig({cwd:process.cwd()});const issues=validateConfig(config).filter(i=>i.severity==="error");push("Config valid", issues.length===0, issues.length?`${issues.length} error(s) in ${source}`:source);}catch(error){push("Config valid", false, String(error instanceof Error?error.message:error));}
   // Provider configuration (never print keys)
-  const providerId=(process.env.LOOM_PROVIDER??(typeof cfg.provider==="string"?cfg.provider:cfg.provider?.id)??"mock").toLowerCase();
+  const providerId=(process.env.LOOM_PROVIDER??(typeof cfg.provider==="string"?cfg.provider:cfg.provider?.id)??"unconfigured").toLowerCase();
   if(providerId==="openai"){push("Provider OPENAI_API_KEY set", Boolean(process.env.OPENAI_API_KEY), process.env.OPENAI_API_KEY?"configured":"OPENAI_API_KEY not set");}
   else if(providerId==="anthropic"||providerId==="claude"){push("Provider ANTHROPIC_API_KEY set", Boolean(process.env.ANTHROPIC_API_KEY), process.env.ANTHROPIC_API_KEY?"configured":"ANTHROPIC_API_KEY not set");}
   else if(providerId==="google"||providerId==="gemini"){const key=process.env.GEMINI_API_KEY??process.env.GOOGLE_API_KEY;push("Provider GEMINI_API_KEY set", Boolean(key), key?"configured":"GEMINI_API_KEY not set");}
   else if(providerId==="mistral"){push("Provider MISTRAL_API_KEY set", Boolean(process.env.MISTRAL_API_KEY), process.env.MISTRAL_API_KEY?"configured":"MISTRAL_API_KEY not set");}
+  else if(providerId==="unconfigured") push("Provider configured", false, "set LOOM_PROVIDER or configure .loom/config.json");
   else push("Provider configured", true, `provider=${providerId}`);
   // Workspace
   try{const ws=process.cwd();const st=await fs.stat(ws);push("Workspace readable", st.isDirectory(), ws);}catch(error){push("Workspace readable", false, String(error instanceof Error?error.message:error));}
@@ -157,7 +158,7 @@ try{
   if(command==="repl"||command==="interactive"||command==="chat"){
     const provider=loadProvider();
     const tools=await loadTools();
-    const resolvedModel=process.env.LOOM_MODEL??(typeof cfg.provider==="object"?cfg.provider.model:undefined)??cfg.model??(process.env.ANTHROPIC_API_KEY?"claude-3-7-sonnet":(process.env.GEMINI_API_KEY??process.env.GOOGLE_API_KEY)?"gemini-2.5-flash":process.env.OPENAI_API_KEY?"gpt-4o":process.env.MISTRAL_API_KEY?"mistral-large":"claude-3-7-sonnet");
+    const resolvedModel=process.env.LOOM_MODEL??(typeof cfg.provider==="object"?cfg.provider.model:undefined)??cfg.model??(process.env.ANTHROPIC_API_KEY?"claude-3-7-sonnet":(process.env.GEMINI_API_KEY??process.env.GOOGLE_API_KEY)?"gemini-2.5-flash":process.env.OPENAI_API_KEY?"gpt-4o":process.env.MISTRAL_API_KEY?"mistral-large":"unconfigured");
     const session=new LoomReplSession({
       state,
       provider,
@@ -242,6 +243,6 @@ try{
   else if(command==="memory"){
     if(args[0]==="set"){state.putMemory(args[1],args[2],args.slice(3).join(" "));state.addTrace(args[1],"memory.updated",{key:args[2]});output({ok:true});}
     else if(args[0]==="delete"){state.deleteMemory(args[1],args[2]);output({ok:true});}else output(state.listVisibleMemory(args[0]));
-  }else if(command==="config")output({...cfg,provider:process.env.LOOM_PROVIDER??cfg.provider??"mock",model:process.env.LOOM_MODEL??cfg.model,agents:{...cfg.agents,maxConcurrent:cfg.agents?.maxConcurrent??2}});
+  }else if(command==="config")output({...cfg,provider:process.env.LOOM_PROVIDER??cfg.provider,model:process.env.LOOM_MODEL??cfg.model,agents:{...cfg.agents,maxConcurrent:cfg.agents?.maxConcurrent??2}});
   else{usage();process.exitCode=1;}
 }catch(error){console.error(error instanceof Error?error.message:error);process.exitCode=1;}

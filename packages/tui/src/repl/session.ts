@@ -25,13 +25,7 @@ import { DEFAULT_SLASH_COMMANDS, SlashAutocompleteView } from "./slash-autocompl
 import { SettingsMultiTabDialog, type SettingsTab } from "./settings-tab-dialog.js";
 import { OAuthLoginDialog } from "./oauth-dialog.js";
 import { ApiKeyPromptDialog } from "./api-key-dialog.js";
-
-
-
-
-
-
-
+import { fetchAllConfiguredModels } from "@loom-agent/providers";
 
 export interface ReplSessionOptions {
   state: StateStore;
@@ -56,7 +50,7 @@ function resolveDisplayModel(provider: Provider, configured?: string): string {
         ? "gpt-4o"
         : process.env.MISTRAL_API_KEY
           ? "mistral-large"
-          : "mock";
+        : "unconfigured";
 }
 
 export class LoomReplSession {
@@ -131,6 +125,9 @@ export class LoomReplSession {
           process.exit(0);
         }
       } else if (matchesKey(data, "shift+tab") || data === "\x1b[Z" || data === "\x1b[1;2Z") {
+        if (this.tui.hasOverlay()) {
+          return undefined;
+        }
         // Toggle Permission Mode
         this.permissionMode = this.permissionMode === "accept edits on" ? "ask before edits" : "accept edits on";
         this.appendMessage(
@@ -167,9 +164,7 @@ export class LoomReplSession {
   private renderWelcome(): void {
     const effectiveModel = resolveDisplayModel(this.options.provider, this.options.modelName);
 
-    const providerName = this.options.provider.name === "mock"
-      ? (process.env.ANTHROPIC_API_KEY ? "anthropic" : (process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY) ? "google" : process.env.OPENAI_API_KEY ? "openai" : "anthropic")
-      : this.options.provider.name;
+    const providerName = this.options.provider.name;
 
     const welcomeCard = new LoomWelcomeCard({
       version: this.options.version ?? "1.1.0",
@@ -189,6 +184,12 @@ export class LoomReplSession {
     this.tui.requestRender();
   }
 
+  private notify(level: "info" | "success" | "warning" | "error", message: string): void {
+    const colors = { info: chalk.cyan, success: chalk.green, warning: chalk.yellow, error: chalk.red };
+    const labels = { info: "INFO", success: "OK", warning: "WARN", error: "ERROR" };
+    this.appendMessage(`${colors[level](`[${labels[level]}]`)} ${message}`);
+  }
+
   private appendMarkdown(markdownText: string): void {
     this.historyContainer.addChild(new Markdown(markdownText, 0, 0, defaultMarkdownTheme));
     this.tui.requestRender();
@@ -196,6 +197,10 @@ export class LoomReplSession {
 
   async start(): Promise<void> {
     this.tui.start();
+    this.notify("info", `Loom ready · provider ${this.options.provider.name} · model ${resolveDisplayModel(this.options.provider, this.options.modelName)}`);
+    if (this.options.provider.name === "mock") {
+      this.notify("warning", "Mock provider is disabled for runtime. Configure a real provider with /provider or /apikey.");
+    }
   }
 
   stop(): void {
@@ -356,9 +361,11 @@ export class LoomReplSession {
       this.appendMessage(
         chalk.bold.green(`\n✔ Completed: `) + chalk.dim(`Agent [${agent.id}] status: ${planResult.status}`)
       );
+      this.notify("success", `Execution completed · ${planResult.status}`);
       this.historyContainer.addChild(new Spacer(1));
     } catch (error) {
       this.historyContainer.removeChild(loader);
+      this.notify("error", error instanceof Error ? error.message : String(error));
       this.appendMessage(chalk.bold.red(`\n✖ Error: `) + (error instanceof Error ? error.message : String(error)));
     } finally {
       this.isExecuting = false;
@@ -398,8 +405,13 @@ export class LoomReplSession {
             `  ${chalk.bold("/statusline")}  Set up status line UI layout and badges`,
             `  ${chalk.bold("/clear")}       Clear transcript and re-render header`,
             `  ${chalk.bold("/exit")}        Exit REPL`,
+            `  ${chalk.bold("/announcements")} Show runtime announcements`,
           ].join("\n") + "\n"
         );
+        break;
+
+      case "/announcements":
+        this.notify("info", "Announcements: provider selection, approval mode, retries, and execution status are shown inline.");
         break;
 
       case "/statusline": {
@@ -423,12 +435,15 @@ export class LoomReplSession {
       }
 
       case "/login": {
-        await this.openLoginDialog(args[0] ?? "Anthropic");
+        const pName = args[0] ?? "Anthropic";
+        await this.openLoginDialog(pName);
         break;
       }
 
       case "/apikey": {
-        await this.openApiKeyDialog(args[0] ?? "anthropic", args[1] ?? "Anthropic");
+        const pId = (args[0] ?? "anthropic").toLowerCase();
+        const pName = args[1] ?? (pId.charAt(0).toUpperCase() + pId.slice(1));
+        await this.openApiKeyDialog(pId, pName);
         break;
       }
 
@@ -520,18 +535,25 @@ export class LoomReplSession {
   private async openSettingsDialog(initialTab: SettingsTab = "providers"): Promise<void> {
     return new Promise<void>((resolve) => {
       let handle: { hide: () => void };
+      const currentMod = this.options.modelName ?? "claude-3-7-sonnet";
       const dialog = new SettingsMultiTabDialog({
         initialTab,
-        currentModel: this.options.modelName ?? "claude-3-7-sonnet",
+        currentModel: currentMod,
         currentProvider: this.options.provider.name,
         onSelectModel: (modelId, providerId) => {
           this.options.modelName = modelId;
           this.updateStatusBar();
           this.appendMessage(chalk.green(`✔ Active model switched to: ${chalk.bold(modelId)} (${providerId})`));
         },
-        onSelectProvider: (providerId) => {
+        onSelectProvider: (providerId, authMethod) => {
           handle.hide();
-          void this.openLoginDialog(providerId);
+          const pId = providerId.toLowerCase();
+          const pName = providerId.charAt(0).toUpperCase() + providerId.slice(1);
+          if (authMethod === "oauth") {
+            void this.openLoginDialog(pName);
+          } else {
+            void this.openApiKeyDialog(pId, pName);
+          }
           resolve();
         },
         onClose: () => {
@@ -544,15 +566,45 @@ export class LoomReplSession {
 
       handle = this.tui.showOverlay(dialog, { width: "85%", maxHeight: 24 });
       this.tui.requestRender();
+
+      // Dynamically fetch live models from configured APIs / SDKs in the background
+      void fetchAllConfiguredModels()
+        .then((remoteModels) => {
+          if (remoteModels && remoteModels.length > 0) {
+            const modelItems = remoteModels.map((m) => ({
+              id: m.id,
+              name: m.name,
+              provider: m.provider,
+              isCurrent: m.id === currentMod || m.name === currentMod,
+            }));
+            dialog.updateModels(modelItems);
+            this.tui.requestRender();
+          }
+        })
+        .catch(() => {});
     });
   }
 
   private async openLoginDialog(providerName: string = "Anthropic"): Promise<void> {
     return new Promise<void>((resolve) => {
       let handle: { hide: () => void };
+      const pId = providerName.toLowerCase();
+
+      // If provider only uses API keys / local endpoints, redirect to API key prompt directly
+      if (!pId.includes("anthropic") && !pId.includes("claude") && !pId.includes("openai") && !pId.includes("chatgpt")) {
+        void this.openApiKeyDialog(pId, providerName);
+        resolve();
+        return;
+      }
+
       const dialog = new OAuthLoginDialog({
         providerName,
-        accountType: providerName.toLowerCase().includes("anthropic") ? "Claude Pro/Max" : "Subscription / API Key",
+        accountType: pId.includes("anthropic") || pId.includes("claude") ? "Claude Pro/Max" : "ChatGPT Subscription",
+        onSwitchToApiKey: () => {
+          handle.hide();
+          void this.openApiKeyDialog(pId, providerName);
+          resolve();
+        },
         onSuccess: (tokenOrKey) => {
           handle.hide();
           this.tui.setFocus(this.editor);

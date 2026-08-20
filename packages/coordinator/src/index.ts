@@ -15,7 +15,13 @@ export type AgentExecutionContext={rootAgentId:string;goal:string;assignedTask:P
 export interface AgentWorker{execute(agent:Agent,task:PlanTask,context:AgentExecutionContext):Promise<AgentResult>}
 
 function policyFrom(error:unknown):FailurePolicy|"cancelled"{
-  return ((error as {failurePolicy?:FailurePolicy})?.failurePolicy??"retryable");
+  const explicit=(error as {failurePolicy?:FailurePolicy})?.failurePolicy;
+  if(explicit)return explicit;
+  const message=String(error instanceof Error?error.message:error).toLowerCase();
+  // Retry transient transport/rate-limit failures, but do not waste attempts on
+  // deterministic configuration, authentication, or permission errors.
+  if(/api[_ -]?key|authentication|unauthorized|forbidden|permission|access denied|invalid (request|argument|model)/i.test(message))return "non_retryable";
+  return "retryable";
 }
 function roleFor(task:PlanTask):AgentRole{
   if(task.kind==="execute")return "coder";

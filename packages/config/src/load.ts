@@ -97,7 +97,6 @@ export async function writeStarterConfig(cwd: string, name: string): Promise<str
   const starter: LoomConfig = {
     schemaVersion: CURRENT_SCHEMA_VERSION,
     name,
-    provider: {id: "mock"},
     runtime: {maxConcurrentJobs: 4},
     policy: {tools: {shell: "ask"}},
   };

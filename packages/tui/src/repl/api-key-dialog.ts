@@ -30,6 +30,7 @@ export class ApiKeyPromptDialog implements Component {
   /** TUI focus marker; modal input must own the active terminal focus. */
   focused = false;
   private keyBuffer = "";
+  private pasteBuffer = "";
   private showPlaintext = false;
   private savePermanently = true;
   private errorMessage = "";
@@ -47,6 +48,23 @@ export class ApiKeyPromptDialog implements Component {
   }
 
   handleInput(data: string): void {
+    // Windows Terminal and modern shells wrap clipboard input in bracketed
+    // paste markers. Handle those before rejecting escape-prefixed sequences.
+    const pasteStart = "\x1b[200~";
+    const pasteEnd = "\x1b[201~";
+    if (this.pasteBuffer || data.includes(pasteStart)) {
+      const started = this.pasteBuffer ? data : data.slice(data.indexOf(pasteStart) + pasteStart.length);
+      this.pasteBuffer += started;
+      const end = this.pasteBuffer.indexOf(pasteEnd);
+      if (end === -1) return;
+      const pasted = this.pasteBuffer.slice(0, end);
+      this.pasteBuffer = "";
+      this.appendPastedText(pasted);
+      const remaining = data.slice(data.lastIndexOf(pasteEnd) + pasteEnd.length);
+      if (remaining) this.handleInput(remaining);
+      return;
+    }
+
     if (matchesKey(data, "escape") || matchesKey(data, "ctrl+c")) {
       this.props.onCancel();
       return;
@@ -80,11 +98,17 @@ export class ApiKeyPromptDialog implements Component {
       return;
     }
 
-    // Accept pasted characters
+    // Accept plain pasted characters from terminals without bracketed paste.
     if (data.length > 0 && !data.startsWith("\x1b")) {
-      this.keyBuffer += data;
-      this.errorMessage = "";
+      this.appendPastedText(data);
     }
+  }
+
+  private appendPastedText(text: string): void {
+    const clean = text.replace(/[\r\n\u0000-\u001f\u007f]/g, "");
+    if (!clean) return;
+    this.keyBuffer += clean;
+    this.errorMessage = "";
   }
 
   private async saveAndSubmit(apiKey: string): Promise<void> {

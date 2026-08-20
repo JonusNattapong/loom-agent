@@ -1,0 +1,70 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "declaration": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "composite": true
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "src/**/*.test.ts",
+    "**/*.test.ts"
+  ],
+  "references": [
+    {
+      "path": "../core"
+    },
+    {
+      "path": "../state"
+    },
+    {
+      "path": "../tools"
+    },
+    {
+      "path": "../skills"
+    },
+    {
+      "path": "../providers"
+    },
+    {
+      "path": "../runtime"
+    },
+    {
+      "path": "../context"
+    },
+    {
+      "path": "../adaptive"
+    },
+    {
+      "path": "../daemon"
+    },
+    {
+      "path": "../control"
+    },
+    {
+      "path": "../coordinator"
+    },
+    {
+      "path": "../remote"
+    },
+    {
+      "path": "../bots"
+    },
+    {
+      "path": "../network"
+    }
+  ]
+}

@@ -1,14 +1,14 @@
 {
   "name": "loom",
   "private": true,
-  "version": "0.9.0",
+  "version": "1.0.0",
   "description": "A local durable multi-agent harness with task graphs and verified execution.",
   "workspaces": [
     "packages/*",
     "packages/bots"
   ],
   "scripts": {
-    "build": "tsc -b packages/core packages/state packages/providers packages/tools packages/context packages/skills packages/mcp packages/planner packages/coordinator packages/runtime packages/adaptive packages/network packages/remote packages/daemon packages/control packages/evals packages/cli packages/bots && npm -w @loom/web run build",
+    "build": "tsc -b && npm -w @loom/web run build",
     "test": "vitest run",
     "test:watch": "vitest",
     "eval": "tsx packages/evals/src/cli.ts",

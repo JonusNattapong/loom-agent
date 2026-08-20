@@ -1,0 +1,7 @@
+*.test.js
+*.test.ts
+*.test.d.ts
+__tests__
+tsconfig.tsbuildinfo
+*.tsbuildinfo
+src/**/*.test.js

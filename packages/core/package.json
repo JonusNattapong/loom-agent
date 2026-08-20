@@ -1,1 +1,11 @@
-{"name":"@loom/core","version":"0.1.0","type":"module","main":"dist/index.js","types":"dist/index.d.ts"}
+{
+  "name": "@loom/core",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ]
+}

@@ -1,1 +1,19 @@
-{"name":"@loom/runtime","version":"0.2.0","type":"module","main":"dist/index.js","types":"dist/index.d.ts","dependencies":{"@loom/context":"0.1.0","@loom/core":"0.1.0","@loom/providers":"0.1.0","@loom/skills":"0.1.0","@loom/state":"0.1.0","@loom/tools":"0.1.0"}}
+{
+  "name": "@loom/runtime",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "@loom/context": "1.0.0",
+    "@loom/core": "1.0.0",
+    "@loom/providers": "1.0.0",
+    "@loom/skills": "1.0.0",
+    "@loom/state": "1.0.0",
+    "@loom/tools": "1.0.0"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ]
+}

@@ -16,9 +16,11 @@ import {AdaptiveOrchestrator} from "@loom/adaptive";
 import {Daemon,nextScheduleAt} from "@loom/daemon";
 import {RemoteWorkerRuntime,loadOrCreateWorkerId,RemoteControllerService,hashWorkerToken} from "@loom/remote";
 import {ControlPlaneService,ControlServer,hashOperatorToken} from "@loom/control";
+import {loadConfig as loadLoomConfig,validateConfig,assertValid,writeStarterConfig} from "@loom/config";
+import {SDK_API_VERSION,PROTOCOL_MAJOR,SCHEMA_VERSION} from "@loom/sdk";
 
 type Config={
-  provider?:string;model?:string;context?:{maxChars?:number};permissions?:Record<string,PermissionLevel>;
+  provider?:{id?:string;model?:string}|string;model?:string;context?:{maxChars?:number};permissions?:Record<string,PermissionLevel>;
   agents?:{maxConcurrent?:number;roles?:Record<string,{model?:string}>};
   planning?:{enabled?:boolean;maxTasks?:number;maxDepth?:number};
   execution?:{maxModelRoundsPerTask?:number;maxToolCallsPerTask?:number};
@@ -31,7 +33,15 @@ type Config={
   controlPlane?:{enabled?:boolean;host?:string;port?:number;readOnly?:boolean;sessionTtlMs?:number;sessionIdleMs?:number;publicOrigin?:string;allowedOrigins?:string[];cookieSecure?:boolean;tlsCertFile?:string;tlsKeyFile?:string};
 };
 
-async function loadConfig():Promise<Config>{try{return JSON.parse(await fs.readFile(join(process.cwd(),".loom","config.json"),"utf8"));}catch{return {};}}
+async function loadConfig():Promise<Config>{
+  try{
+    const {config,source}=await loadLoomConfig({cwd:process.cwd()});
+    // validate but do not hard-fail on warnings; surface errors clearly
+    const issues=validateConfig(config).filter(i=>i.severity==="error");
+    if(issues.length){const lines=issues.map(i=>`  - ${i.path}: ${i.message}`).join("\n");console.error(`Config loaded from ${source} has issues:\n${lines}`);}
+    return config as Config;
+  }catch{return {};}
+}
 const cfg=await loadConfig();const argv=process.argv.slice(2);const command=argv[0];const json=argv.includes("--json");
 const skillIndex=argv.indexOf("--skill");const maxTasksIndex=argv.indexOf("--max-tasks");const maxAgentsIndex=argv.indexOf("--max-agents");
 const selectedSkills=skillIndex>=0?[argv[skillIndex+1]]:[];const maxTasks=maxTasksIndex>=0?Number(argv[maxTasksIndex+1]):undefined;
@@ -42,6 +52,52 @@ const args=argv.slice(1).filter(value=>!skipped.has(value));const state=new Stat
 async function loadTools(){for(const [name,server] of Object.entries(cfg.mcpServers??{})){try{const client=await new McpClient(server,(type,data)=>console.error(`[${type}]`,data)).connect();for(const tool of mcpTools(client))registry.register(tool);}catch(error){console.error(`MCP server ${name} unavailable: ${error instanceof Error?error.message:error}`);}}return registry;}
 function loadProvider():Provider{const name=process.env.LOOM_PROVIDER??cfg.provider??"mock";if(name==="openai")return new OpenAICompatibleProvider(undefined,process.env.LOOM_MODEL??cfg.model);return new MockProvider();}
 function output(value:unknown,human?:string){console.log(json?JSON.stringify(value,null,2):human??(typeof value==="string"?value:JSON.stringify(value,null,2)));}
+function getVersionInfo(){return {loom:"1.0.0",sdk:SDK_API_VERSION,protocol:PROTOCOL_MAJOR,schema:SCHEMA_VERSION,node:process.version};}
+
+interface DoctorCheck {name:string;ok:boolean;detail?:string;severity?: "error"|"warning";}
+interface DoctorReport {status:"ok"|"degraded"|"error";loomVersion:string;nodeVersion:string;checks:DoctorCheck[];}
+
+async function portReachable(host:string,port:number):Promise<boolean>{
+  const net=await import("node:net");
+  return new Promise<boolean>((resolve)=>{const sock=net.createConnection({host,port});const done=(v:boolean)=>{sock.destroy();resolve(v);};sock.once("connect",()=>done(true));sock.once("error",()=>done(false));setTimeout(()=>done(false),500);});
+}
+
+async function doctor():Promise<DoctorReport>{
+  const checks:DoctorCheck[]=[];
+  const push=(name:string,ok:boolean,detail?:string,severity:"error"|"warning"="error")=>checks.push({name,ok,detail,severity});
+  const info=getVersionInfo();
+  // Node version
+  const major=Number(process.versions.node.split(".")[0]);
+  push("Node >= 18.18", major>=18 && !(major===18 && Number(process.versions.node.split(".")[1])<18), `node ${process.versions.node}`);
+  push("Loom version", true, `loom ${info.loom} · sdk ${info.sdk}`);
+  // Database access
+  let dbOk=false, dbDetail="";
+  try{const probe=new StateStore();dbOk=probe.getSchemaVersion()>=0;dbDetail=`schema ${probe.getSchemaVersion()}`;probe.close();}catch(error){dbDetail=String(error instanceof Error?error.message:error);}
+  push("Database access", dbOk, dbDetail);
+  // Migration status
+  try{const probe=new StateStore();push("Migration applied", probe.getSchemaVersion()===SCHEMA_VERSION, `schema ${probe.getSchemaVersion()} / expected ${SCHEMA_VERSION}`);probe.close();}catch{/* db check already covers */}
+  // Config validity
+  try{const {config,source}=await loadLoomConfig({cwd:process.cwd()});const issues=validateConfig(config).filter(i=>i.severity==="error");push("Config valid", issues.length===0, issues.length?`${issues.length} error(s) in ${source}`:source);}catch(error){push("Config valid", false, String(error instanceof Error?error.message:error));}
+  // Provider configuration (never print keys)
+  const providerId=process.env.LOOM_PROVIDER??(typeof cfg.provider==="string"?cfg.provider:cfg.provider?.id)??"mock";
+  if(providerId==="openai"){push("Provider OPENAI_API_KEY set", Boolean(process.env.OPENAI_API_KEY), process.env.OPENAI_API_KEY?"configured":"OPENAI_API_KEY not set");}
+  else push("Provider configured", true, `provider=${providerId}`);
+  // Workspace
+  try{const ws=process.cwd();const st=await fs.stat(ws);push("Workspace readable", st.isDirectory(), ws);}catch(error){push("Workspace readable", false, String(error instanceof Error?error.message:error));}
+  // Control plane config
+  if(cfg.controlPlane?.enabled){push("Control plane configured", Boolean(cfg.controlPlane.port), `port ${cfg.controlPlane.port}`);}
+  else push("Control plane", true, "disabled (default)");
+  // Remote config
+  if(cfg.remote?.enabled){push("Remote worker listener", Boolean(cfg.remote.listen?.port||cfg.remote.listen?.host), `host ${cfg.remote.listen?.host??"127.0.0.1"} port ${cfg.remote.listen?.port??4778}`);}
+  else push("Remote worker listener", true, "disabled");
+  // Required env vars for worker token if configured
+  if(cfg.worker?.tokenEnv){push(`Env ${cfg.worker.tokenEnv}`, Boolean(process.env[cfg.worker.tokenEnv]), process.env[cfg.worker.tokenEnv]?"set":"missing");}
+  const errors=checks.filter(c=>!c.ok&&c.severity==="error");
+  const warnings=checks.filter(c=>!c.ok&&c.severity==="warning");
+  const status=errors.length?"error":warnings.length?"degraded":"ok";
+  return {status,loomVersion:info.loom,nodeVersion:process.versions.node,checks};
+}
+
 function usage(){console.log("loom operator token create [--name NAME] | loom worker start --controller URL --token-env ENV [--id ID] | loom run <goal> [--max-agents N] | daemon start|stop|status | jobs | job enqueue|inspect|cancel|retry <id> | schedules | schedule add|pause|resume|delete <id> | plan <id> | reviews <id> | ps | inspect <id> | resume <id> | trace <id> | agents | agent inspect|cancel <id> | delegations <id> | messages <id> | approve|deny <request-id>");}
 
 function scopedPermissions(tools:ToolRegistry,allowedTools?:string[]):Record<string,PermissionLevel>{
@@ -94,7 +150,11 @@ function inspectHuman(agentId:string){
 }
 
 try{
-  if(command==="operator"&&args[0]==="token"&&args[1]==="create"){const nameIndex=argv.indexOf("--name"),name=nameIndex>=0?argv[nameIndex+1]:"local-admin",token=randomBytes(32).toString("base64url"),credential=state.createOperatorCredential({name,tokenHash:hashOperatorToken(token),role:"operator"});output({operatorId:credential.id,token},`Operator token (store securely; shown once): ${token}`);}
+  if(command==="--version"||command==="version"){const info=getVersionInfo();output(info,`loom ${info.loom} · sdk ${info.sdk} · schema ${info.schema} · protocol ${info.protocol} · ${info.node}`);}
+  else if(command==="init"){const name=argv[1]??(await import("node:path")).basename(process.cwd());const path=await writeStarterConfig(process.cwd(),name);output({created:path,name},`Created ${path}`);const skillsDir=join(process.cwd(),".loom","skills");await fs.mkdir(skillsDir,{recursive:true});}
+  else if(command==="config"&&args[0]==="validate"){const path=join(process.cwd(),".loom","config.json");try{const raw=JSON.parse(await fs.readFile(path,"utf8"));assertValid(raw);output({ok:true,source:path},`Config valid: ${path}`);}catch(error){output({ok:false,error:String(error instanceof Error?error.message:error)},`Config invalid: ${path}`);process.exitCode=1;}}
+  else if(command==="doctor"){const report=await doctor();const code=report.status==="ok"?0:1;if(json)output(report);else{for(const line of report.checks)console.log(`${line.ok?"✓":"✗"} ${line.name}${line.detail?`: ${line.detail}`:""}`);console.log(`\nDoctor: ${report.status}`);}process.exitCode=code;}
+  else if(command==="operator"&&args[0]==="token"&&args[1]==="create"){const nameIndex=argv.indexOf("--name"),name=nameIndex>=0?argv[nameIndex+1]:"local-admin",token=randomBytes(32).toString("base64url"),credential=state.createOperatorCredential({name,tokenHash:hashOperatorToken(token),role:"operator"});output({operatorId:credential.id,token},`Operator token (store securely; shown once): ${token}`);}
   else if(command==="worker"&&args[0]==="token"&&args[1]==="create"){const token=randomBytes(32).toString("base64url");output({token,tokenHash:hashWorkerToken(token)},"Token (store securely; shown once): "+token);}
   else if(command==="worker"&&args[0]==="start"){
     const value=(name:string)=>{const i=argv.indexOf(name);return i>=0?argv[i+1]:undefined;};

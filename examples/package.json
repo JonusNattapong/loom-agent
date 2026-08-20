@@ -1,0 +1,22 @@
+{
+  "name": "loom-examples",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "basic-agent": "tsx basic-agent.ts",
+    "multi-agent": "tsx multi-agent.ts",
+    "scheduled-agent": "tsx scheduled-agent.ts",
+    "remote-worker": "tsx remote-worker.ts",
+    "bot": "tsx bot.ts",
+    "world-adapter": "tsx world-adapter.ts"
+  },
+  "dependencies": {
+    "@loom/sdk": "1.0.0",
+    "@loom/config": "1.0.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

@@ -1,0 +1,602 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Loom Control Plane API",
+    "version": "1.0.0",
+    "description": "Stable /api/v1 contract for the Loom V1.0 Control Plane. Breaking changes require /api/v2."
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:4777",
+      "description": "default local control plane"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "cookieSession": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "loom_session"
+      },
+      "bearerToken": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "Agent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "task": {
+            "type": "string"
+          },
+          "goal": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "planner",
+              "researcher",
+              "coder",
+              "reviewer",
+              "tester",
+              "general"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "result": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "Job": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "rootAgentId": {
+            "type": "string"
+          },
+          "attempt": {
+            "type": "integer"
+          },
+          "availableAt": {
+            "type": "integer"
+          }
+        }
+      },
+      "Approval": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "agentId": {
+            "type": "string"
+          },
+          "toolName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "denied"
+            ]
+          }
+        }
+      },
+      "Schedule": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "expression": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "nextRunAt": {
+            "type": "integer"
+          }
+        }
+      },
+      "Worker": {
+        "type": "object",
+        "properties": {
+          "workerId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "trust": {
+            "type": "string"
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "cookieSession": []
+    }
+  ],
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "summary": "Health check",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "summary": "Exchange operator token for a session",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "session created"
+          },
+          "401": {
+            "description": "invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/session": {
+      "get": {
+        "summary": "Current session",
+        "responses": {
+          "200": {
+            "description": "session"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "summary": "Revoke current session",
+        "responses": {
+          "200": {
+            "description": "logged out"
+          }
+        }
+      }
+    },
+    "/api/v1/summary": {
+      "get": {
+        "summary": "Dashboard summary",
+        "responses": {
+          "200": {
+            "description": "summary"
+          }
+        }
+      }
+    },
+    "/api/v1/agents": {
+      "get": {
+        "summary": "List agents",
+        "responses": {
+          "200": {
+            "description": "agents"
+          }
+        }
+      }
+    },
+    "/api/v1/agents/{id}": {
+      "get": {
+        "summary": "Get agent",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "agent"
+          },
+          "404": {
+            "description": "not found"
+          }
+        }
+      }
+    },
+    "/api/v1/jobs": {
+      "get": {
+        "summary": "List jobs",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "jobs"
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/{id}": {
+      "get": {
+        "summary": "Get job",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "job"
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/{id}/cancel": {
+      "post": {
+        "summary": "Cancel job",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "cancelled"
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/{id}/retry": {
+      "post": {
+        "summary": "Retry job",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "retried"
+          }
+        }
+      }
+    },
+    "/api/v1/schedules": {
+      "get": {
+        "summary": "List schedules",
+        "responses": {
+          "200": {
+            "description": "schedules"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create schedule",
+        "responses": {
+          "200": {
+            "description": "created"
+          }
+        }
+      }
+    },
+    "/api/v1/schedules/{id}": {
+      "get": {
+        "summary": "Get schedule",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "schedule"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete schedule",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "deleted"
+          }
+        }
+      }
+    },
+    "/api/v1/schedules/{id}/pause": {
+      "post": {
+        "summary": "Pause schedule",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "paused"
+          }
+        }
+      }
+    },
+    "/api/v1/schedules/{id}/resume": {
+      "post": {
+        "summary": "Resume schedule",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "resumed"
+          }
+        }
+      }
+    },
+    "/api/v1/approvals": {
+      "get": {
+        "summary": "List approvals",
+        "parameters": [
+          {
+            "name": "rootAgentId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "approvals"
+          }
+        }
+      }
+    },
+    "/api/v1/approvals/{id}": {
+      "get": {
+        "summary": "Get approval",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "approval"
+          }
+        }
+      }
+    },
+    "/api/v1/approvals/{id}/approve": {
+      "post": {
+        "summary": "Approve",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "approved"
+          }
+        }
+      }
+    },
+    "/api/v1/approvals/{id}/deny": {
+      "post": {
+        "summary": "Deny",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "denied"
+          }
+        }
+      }
+    },
+    "/api/v1/workers": {
+      "get": {
+        "summary": "List workers",
+        "responses": {
+          "200": {
+            "description": "workers"
+          }
+        }
+      }
+    },
+    "/api/v1/routes": {
+      "get": {
+        "summary": "List logical routes",
+        "responses": {
+          "200": {
+            "description": "routes"
+          }
+        }
+      }
+    },
+    "/api/v1/traces": {
+      "get": {
+        "summary": "List traces",
+        "responses": {
+          "200": {
+            "description": "traces"
+          }
+        }
+      }
+    },
+    "/api/v1/audit": {
+      "get": {
+        "summary": "List audit events",
+        "responses": {
+          "200": {
+            "description": "audit"
+          }
+        }
+      }
+    },
+    "/api/v1/events": {
+      "get": {
+        "summary": "SSE event stream",
+        "responses": {
+          "200": {
+            "description": "text/event-stream"
+          }
+        }
+      }
+    }
+  }
+}

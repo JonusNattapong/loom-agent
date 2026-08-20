@@ -1,5 +1,5 @@
-import {LoomRouteRegistry,formatLoomAddress,parseLoomAddress,type LoomAddressLike} from "@loom/network";/** Versioned coordinator/remote-worker protocol primitives (V0.8). */
-export const PROTOCOL_VERSION = "0.8" as const;
+import {LoomRouteRegistry,formatLoomAddress,parseLoomAddress,type LoomAddressLike} from "@loom/network";/** Versioned coordinator/remote-worker protocol primitives (V1.0). */
+export const PROTOCOL_VERSION = "1.0" as const;
 
 export type ProtocolType = "register" | "heartbeat" | "dispatch" | "accepted" | "started" | "renew" | "ack" | "result" | "error" | "disconnect" | "cancel";
 export type WorkerTrust = "untrusted" | "trusted" | "approved";

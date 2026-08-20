@@ -30,7 +30,7 @@ export class Daemon {
 
  async start(){
   if(this.running)return;
-  this.state.startDaemon({daemonId:this.daemonId,pid:process.pid,hostname:os.hostname(),version:"0.9.0",staleAfterMs:this.options.staleAfterMs});
+  this.state.startDaemon({daemonId:this.daemonId,pid:process.pid,hostname:os.hostname(),version:"1.0.0",staleAfterMs:this.options.staleAfterMs});
   this.running=true;
   this.stopping=false;
   this.state.recoverStaleJobs(Date.now()+this.options.leaseMs,Date.now());

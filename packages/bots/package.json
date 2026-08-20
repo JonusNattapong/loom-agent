@@ -2,7 +2,7 @@
   "name": "@loom/bots",
   "description": "Bot runtime and event gateway",
   "private": true,
-  "version": "0.5.0",
+  "version": "1.0.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

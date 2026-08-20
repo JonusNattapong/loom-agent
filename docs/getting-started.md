@@ -1,14 +1,40 @@
 ---
 title: Getting started
-version: 0.4
+version: 1.0
 category: tutorial
 ---
 
 # Getting started
 
-This tutorial runs Loom with its deterministic mock provider, inspects a local agent tree, pauses partway through execution, and resumes from SQLite state.
+Loom V1.0 is a unified agent platform: install it, define an agent application
+with the stable public SDK, run it locally or remotely, observe it through the
+control plane, and extend it via providers/tools/skills/bots — all through
+versioned public contracts.
 
-## 1. Install and verify
+## 0. Quickstart with the public SDK (new in V1.0)
+
+```bash
+npm install @loom/sdk
+```
+
+```ts
+import {createLoomApp, defineAgent} from "@loom/sdk";
+
+const app = createLoomApp({
+  name: "hello",
+  provider: {id: process.env.LOOM_PROVIDER ?? "mock"},
+  agents: [defineAgent({id: "main", role: "planner", goal: "Say hello"})],
+});
+const agent = await app.run({goal: "Say hello", agent: "main"});
+console.log(agent.status, agent.result);
+await app.stop();
+```
+
+The default provider is `mock` (deterministic, no network). Set
+`LOOM_PROVIDER=openai` and `LOOM_API_KEY` for real model output. See
+`docs/sdk.md` and `examples/`.
+
+## 1. Build and verify from source
 
 ```bash
 bun install

@@ -1,1 +1,10 @@
-{"name":"@loom/mcp","version":"0.1.0","type":"module","main":"dist/index.js","types":"dist/index.d.ts","dependencies":{"@loom/core":"0.1.0"}}
+{
+  "name": "@loom/mcp",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "@loom/core": "1.0.0"
+  }
+}

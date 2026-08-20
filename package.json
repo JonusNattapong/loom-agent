@@ -24,7 +24,6 @@
     "@types/ws": "^8.18.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
-    "vitest": "^3.2.7",
-    "@changesets/cli": "^2.31.1"
+    "vitest": "^3.2.7"
   }
 }

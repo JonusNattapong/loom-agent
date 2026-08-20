@@ -30,7 +30,7 @@ export class Daemon {
 
  async start(){
   if(this.running)return;
-  this.state.startDaemon({daemonId:this.daemonId,pid:process.pid,hostname:os.hostname(),version:"0.7.0",staleAfterMs:this.options.staleAfterMs});
+  this.state.startDaemon({daemonId:this.daemonId,pid:process.pid,hostname:os.hostname(),version:"0.9.0",staleAfterMs:this.options.staleAfterMs});
   this.running=true;
   this.stopping=false;
   this.state.recoverStaleJobs(Date.now()+this.options.leaseMs,Date.now());
@@ -172,6 +172,7 @@ export class Daemon {
 
  private async execute(job:any){
   this.state.updateJob(job.id,"running",{claimedBy:this.daemonId,leaseExpiresAt:Date.now()+this.options.leaseMs});
+  const renewEvery=Math.max(50,Math.floor(this.options.leaseMs/3));const renewTimer=setInterval(()=>{try{this.state.renewJobLease?.(job.id,this.daemonId,this.options.leaseMs);}catch{}},renewEvery);
   try{
    if(!this.runner)throw new Error("daemon provider/job runner is not configured");
    const result=await this.runner.run(job,this);
@@ -189,7 +190,7 @@ export class Daemon {
    if(this.state.getJob(job.id)?.status==="cancelled")return;
    if(job.attempt<job.maxAttempts)this.state.updateJob(job.id,"retry_wait",{availableAt:Date.now()+Math.min(30000,5000*2**Math.max(0,job.attempt-1)),errorMessage:String(error)});
    else this.state.updateJob(job.id,"failed",{errorMessage:String(error)});
-  }
+  }finally{clearInterval(renewTimer);}
  }
 
  async stop(){

@@ -30,7 +30,7 @@ Paths in the tables omit the `/api/v1` prefix.
 | `GET` | `/agents/:id/tasks` | Tasks for the root plan. |
 | `GET` | `/agents/:id/plan` | Plan and revisions. |
 | `GET` | `/agents/:id/reviews` | Reviews associated with plan tasks. |
-| `GET` | `/agents/:id/trace` | Latest trace rows; `limit` 1–500, optional `rootTimeline=true`. |
+| `GET` | `/agents/:id/trace` | Latest bounded trace rows; `limit` 1–500, optional `rootTimeline=true`; sensitive fields and token-like values are redacted. |
 | `GET` | `/jobs` | Optional `status`; supports `offset`/`limit`. |
 | `GET` | `/jobs/:id` | One job. |
 | `GET` | `/schedules` | All schedules. |
@@ -44,7 +44,7 @@ Paths in the tables omit the `/api/v1` prefix.
 | `GET` | `/remote/assignments` | Optional `status` and `workerId`; supports `offset`/`limit`. |
 | `GET` | `/remote/assignments/:id` | Assignment, lease, and up to 50 execution events. |
 | `GET` | `/remote-assignments[/:id]` | Compatibility alias for remote assignments. |
-| `GET` | `/traces` | Optional `type`, `since`, `workerId`, `jobId`, `assignmentId`; `limit` 1–500. |
+| `GET` | `/traces` | Optional `type`, `since`, `workerId`, `jobId`, `assignmentId`; `limit` 1–500. Sensitive field names and token-like values are redacted and output is bounded. |
 | `GET` | `/traces/:id` | Root-timeline trace for an agent; optional `limit` 1–500. |
 | `GET` | `/audit` | Optional `afterId`, `action`, `resourceType`; `limit` 1–200. |
 | `GET` | `/routes` | Current worker route descriptors. |

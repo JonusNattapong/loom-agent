@@ -52,6 +52,12 @@ describe("StateStore",()=>{
     state.revokeOperatorSession("session-1",5);expect(state.getOperatorSession("session-hash")?.revokedAt).toBe(5);state.close();
   });
 
+  it("reclaims retry_wait jobs when available and resets manual retry attempts",()=>{const state=new StateStore(":memory:");const job=state.enqueueJob({id:"retry-job",type:"agent_run",payload:{}})!;state.updateJob(job.id,"retry_wait",{availableAt:10});expect(state.claimNextJob("daemon",100,9)).toBeUndefined();const claimed=state.claimNextJob("daemon",100,10)!;expect(claimed.status).toBe("claimed");state.updateJob(job.id,"failed");state.updateJob(job.id,"failed",{ });expect(state.retryJob(job.id)?.attempt).toBe(0);state.close();});
+
+  it("does not materialize a stale schedule snapshot after pause",()=>{const state=new StateStore(":memory:");const schedule=state.createSchedule({id:"race-schedule",kind:"interval",expression:"1m",timezone:"UTC",payload:{},nextRunAt:1000});state.updateSchedule(schedule.id,{enabled:false});expect(state.materializeSchedule(schedule.id,1000,{})).toBeUndefined();expect(state.listJobs()).toHaveLength(0);state.close();});
+
+  it("redacts sensitive trace data before persistence",()=>{const state=new StateStore(":memory:");const agent=state.createAgentRecord({id:"trace-redact",goal:"x",role:"planner"});state.addTrace(agent.id,"tool.result",{apiKey:"sk-12345678901234567890",output:"Bearer abc.def.ghi"});const row=state.getTrace(agent.id)[0];expect(JSON.stringify(row)).not.toContain("sk-12345678901234567890");expect(JSON.stringify(row)).not.toContain("Bearer abc.def.ghi");state.close();});
+
   it("upgrades a migration 12 database to control-plane schema 13 without reset",()=>{
     const filename=join(tmpdir(),`loom-v12-${randomUUID()}.db`);const initial=new StateStore(filename);initial.enqueueJob({id:"preserved-job",type:"agent_run",payload:{goal:"preserve"}});initial.db.prepare("DELETE FROM schema_migrations WHERE version=13").run();initial.db.exec("DROP TABLE operator_credentials; DROP TABLE operator_sessions; DROP TABLE operator_audit; DROP TABLE control_events; DROP TABLE worker_connection_epochs;");initial.close();
     try{const upgraded=new StateStore(filename);expect(upgraded.getSchemaVersion()).toBe(13);expect(upgraded.getJob("preserved-job")?.id).toBe("preserved-job");expect(upgraded.listOperatorAudit()).toEqual([]);upgraded.close();}finally{rmSync(filename,{force:true});}

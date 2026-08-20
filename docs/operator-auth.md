@@ -46,6 +46,7 @@ curl -b cookies.txt -H "Origin: $origin" -H "X-CSRF-Token: $CSRF"   -X POST "$or
 
 - Never put the operator token in a URL, query string, JSON body, log, or committed config file.
 - Non-local binding is refused without native TLS, an HTTPS public origin, secure cookies, and an exact allowlist containing that origin. See [Control plane](control-plane.md).
+- Disabling a credential invalidates its existing sessions on the next authenticated request or SSE heartbeat.
 - Session and CSRF values are random; their hashes are stored in SQLite.
 - Login failures use a generic invalid-credentials response and login attempts have a stricter rate limit.
 - Successful login/logout and control mutations create audit records available to authenticated operators at `GET /api/v1/audit`.

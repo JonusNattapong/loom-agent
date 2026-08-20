@@ -8,6 +8,17 @@ category: how-to
 
 Loom includes native provider adapters with tool calling / function execution support across all major AI providers.
 
+## OpenCode
+
+`OpenCodeProvider` delegates a goal to the locally installed OpenCode coding agent. It is useful when OpenCode already has the model credentials and project context configured:
+
+```powershell
+$env:LOOM_PROVIDER = "opencode"
+npm run loom -- repl
+```
+
+The adapter runs `opencode run` in the current workspace. Set `OPENCODE_COMMAND` when the executable is not on `PATH`. OpenCode manages its own model authentication; Loom does not pass provider API keys to the subprocess.
+
 ## 1. Mock Provider
 
 `MockProvider` is the default when no provider or API key is specified. It returns deterministic responses derived from user prompts. Ideal for local unit testing, evaluation harnesses, and offline development.

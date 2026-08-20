@@ -2,10 +2,12 @@ import type { Message, Provider, ProviderRequest, ProviderResponse } from "@loom
 import { AnthropicProvider, type AnthropicProviderOptions } from "./anthropic.js";
 import { GoogleProvider, type GoogleProviderOptions } from "./google.js";
 import { MistralProvider, type MistralProviderOptions } from "./mistral.js";
+import { OpenCodeProvider, type OpenCodeProviderOptions } from "./opencode.js";
 
 export { AnthropicProvider, type AnthropicProviderOptions } from "./anthropic.js";
 export { GoogleProvider, type GoogleProviderOptions } from "./google.js";
 export { MistralProvider, type MistralProviderOptions } from "./mistral.js";
+export { OpenCodeProvider, type OpenCodeProviderOptions, formatOpenCodePrompt } from "./opencode.js";
 export {
   fetchModelsForProvider,
   fetchAllConfiguredModels,
@@ -85,7 +87,7 @@ export class OpenAICompatibleProvider implements Provider {
 }
 
 export type ProviderConfig =
-  | { id?: string; apiKey?: string; model?: string; baseUrl?: string }
+  | { id?: string; apiKey?: string; model?: string; baseUrl?: string; cwd?: string }
   | string;
 
 export function createProvider(config?: ProviderConfig): Provider {
@@ -107,6 +109,9 @@ export function createProvider(config?: ProviderConfig): Provider {
   switch (providerId.toLowerCase()) {
     case "mock":
       return new MockProvider();
+    case "opencode":
+    case "open-code":
+      return new OpenCodeProvider({ cwd: typeof config === "object" && config.cwd ? config.cwd : process.cwd() });
     case "openai": {
       const apiKey = typeof config === "object" && "apiKey" in config ? config.apiKey : process.env.OPENAI_API_KEY;
       const baseUrl = typeof config === "object" && "baseUrl" in config ? config.baseUrl : process.env.OPENAI_BASE_URL;

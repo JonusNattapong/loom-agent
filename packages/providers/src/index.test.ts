@@ -6,6 +6,8 @@ import {
   MistralProvider,
   createProvider,
   fetchModelsForProvider,
+  OpenCodeProvider,
+  formatOpenCodePrompt,
 } from "./index.js";
 
 describe("@loom-agent/providers", () => {
@@ -34,6 +36,23 @@ describe("@loom-agent/providers", () => {
       const provider = createProvider({ id: "deepseek", apiKey: "test-key" });
       expect(provider.name).toBe("deepseek");
     });
+
+    it("creates an OpenCode provider", () => {
+      const provider = createProvider({ id: "opencode" });
+      expect(provider).toBeInstanceOf(OpenCodeProvider);
+      expect(provider.name).toBe("opencode");
+    });
+  });
+
+  it("formats system, messages, and tools for OpenCode", () => {
+    const prompt = formatOpenCodePrompt({
+      system: "Be concise",
+      messages: [{ role: "user", content: "Inspect the repo" }],
+      tools: [{ name: "read_file", description: "Read a file" }],
+    });
+    expect(prompt).toContain("SYSTEM:");
+    expect(prompt).toContain("USER:");
+    expect(prompt).toContain("read_file");
   });
 
   describe("Dynamic model fetching", () => {

@@ -422,7 +422,8 @@ export class LoomReplSession {
       case "/apikey": {
         const pId = (args[0] ?? "anthropic").toLowerCase();
         const pName = args[1] ?? (pId.charAt(0).toUpperCase() + pId.slice(1));
-        await this.openApiKeyDialog(pId, pName);
+        const configured = await this.openApiKeyDialog(pId, pName);
+        if (configured) await this.openSettingsDialog("models");
         break;
       }
 
@@ -604,8 +605,8 @@ export class LoomReplSession {
     });
   }
 
-  private async openApiKeyDialog(providerId: string = "anthropic", providerName: string = "Anthropic"): Promise<void> {
-    return new Promise<void>((resolve) => {
+  private async openApiKeyDialog(providerId: string = "anthropic", providerName: string = "Anthropic"): Promise<boolean> {
+    return new Promise<boolean>((resolve) => {
       // Do not leave the command text/input visible behind the modal.
       this.editor.setText("");
       let handle: { hide: () => void };
@@ -621,15 +622,13 @@ export class LoomReplSession {
           this.tui.requestRender();
           this.appendMessage(chalk.green(`✔ API key configured and saved for ${chalk.bold(providerName)}!`));
           this.notify("success", `Active provider switched to ${providerName}.`);
-          resolve();
-          // Continue setup directly into model selection after authentication.
-          void this.openSettingsDialog("models");
+          resolve(true);
         },
         onCancel: () => {
           handle.hide();
           this.tui.setFocus(this.editor);
           this.tui.requestRender();
-          resolve();
+          resolve(false);
         },
       });
 

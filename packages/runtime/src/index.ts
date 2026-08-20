@@ -128,3 +128,50 @@ export class SelfTester {
   return Promise.all(checks.map(async check=>{try{const passed=await check.run();return {name:check.name,passed,detail:passed?undefined:"check returned false"};}catch(error){return {name:check.name,passed:false,detail:error instanceof Error?error.message:String(error)};}}));
  }
 }
+
+export type SelfRecoveryDecision={retry:boolean;delayMs:number;reason:string};
+export class SelfRecovery {
+ constructor(private readonly runtime:SelfRuntime){}
+ decide(error:unknown,attempt:number,maxAttempts=3):SelfRecoveryDecision{
+  if(!this.runtime.isEnabled("recovery"))return {retry:false,delayMs:0,reason:"self-recovery disabled"};
+  const message=String(error instanceof Error?error.message:error).toLowerCase();
+  if(/api[_ -]?key|unauthorized|forbidden|permission|invalid/.test(message))return {retry:false,delayMs:0,reason:"non-transient failure"};
+  if(attempt>=maxAttempts)return {retry:false,delayMs:0,reason:"retry limit reached"};
+  return {retry:true,delayMs:Math.min(30_000,500*2**attempt),reason:"transient failure"};
+ }
+}
+
+export type SelfHealth={status:"healthy"|"degraded"|"failed";checks:Record<string,boolean>;timestamp:string};
+export class SelfMonitor {
+ constructor(private readonly runtime:SelfRuntime){}
+ snapshot(checks:Record<string,boolean>):SelfHealth{
+  if(!this.runtime.isEnabled("monitoring"))return {status:"healthy",checks,timestamp:new Date().toISOString()};
+  const values=Object.values(checks);const status=values.every(Boolean)?"healthy":values.some(Boolean)?"degraded":"failed";
+  return {status,checks,timestamp:new Date().toISOString()};
+ }
+}
+
+export class SelfGovernance {
+ constructor(private readonly runtime:SelfRuntime){}
+ authorize(action:"read"|"tool"|"change"|"memory",approved=false):boolean{
+  if(!this.runtime.isEnabled("governance"))return action==="read";
+  if(action==="change"||action==="memory")return approved||!this.runtime.requiresApproval(action==="memory"?"memory":"change");
+  return true;
+ }
+}
+
+export class SelfSecurity {
+ private readonly secretPattern=/api[_ -]?key|password|passwd|token|secret|private key|BEGIN [A-Z ]+ KEY/i;
+ constructor(private readonly runtime:SelfRuntime){}
+ redact(value:string){return this.runtime.isEnabled("security")&&this.secretPattern.test(value)?"[REDACTED]":value;}
+ isSensitive(value:string){return this.secretPattern.test(value);}
+}
+
+export type SelfOptimization={maxChars?:number;maxToolCalls?:number;reason:string};
+export class SelfOptimizer {
+ constructor(private readonly runtime:SelfRuntime){}
+ tune(input:{contextChars:number;toolCalls:number;failures:number}):SelfOptimization{
+  if(!this.runtime.isEnabled("optimization"))return {reason:"self-optimization disabled"};
+  const pressure=input.failures>0||input.toolCalls>20;return pressure?{maxChars:Math.max(2000,Math.floor(input.contextChars*.8)),maxToolCalls:Math.max(4,Math.floor(input.toolCalls*.75)),reason:"reduced limits after execution pressure"}:{reason:"current limits are healthy"};
+ }
+}

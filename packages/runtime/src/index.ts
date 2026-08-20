@@ -41,3 +41,31 @@ export class SelfGrowthEngine {
   item.status="rejected";return item;
  }
 }
+
+export type SelfCapability=
+  | "growth"|"memory"|"feedback"|"tool"|"planning"|"routing"
+  | "evaluation"|"review"|"testing"|"correction"|"recovery"
+  | "monitoring"|"governance"|"security"|"documentation"|"optimization";
+
+export type SelfRuntimePolicy={
+  enabled?:boolean;
+  capabilities?:Partial<Record<SelfCapability,boolean>>;
+  requireApprovalForMemory?:boolean;
+  requireApprovalForChanges?:boolean;
+  allowSecretPersistence?:boolean;
+};
+
+/** Central policy gate for the self-* capability suite. */
+export class SelfRuntime {
+  constructor(private readonly policy:SelfRuntimePolicy={}){}
+  isEnabled(capability:SelfCapability):boolean{
+    if(this.policy.enabled===false)return false;
+    return this.policy.capabilities?.[capability]!==false;
+  }
+  requiresApproval(kind:"memory"|"change"):boolean{
+    return kind==="memory"
+      ? this.policy.requireApprovalForMemory!==false
+      : this.policy.requireApprovalForChanges!==false;
+  }
+  canPersistSecret():boolean{return this.policy.allowSecretPersistence===true;}
+}

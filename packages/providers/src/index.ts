@@ -7,7 +7,7 @@ import { OpenCodeProvider, type OpenCodeProviderOptions } from "./opencode.js";
 export { AnthropicProvider, type AnthropicProviderOptions } from "./anthropic.js";
 export { GoogleProvider, type GoogleProviderOptions } from "./google.js";
 export { MistralProvider, type MistralProviderOptions } from "./mistral.js";
-export { OpenCodeProvider, type OpenCodeProviderOptions, formatOpenCodePrompt } from "./opencode.js";
+export { OpenCodeProvider, type OpenCodeProviderOptions, formatOpenCodePrompt, parseModel } from "./opencode.js";
 export {
   fetchModelsForProvider,
   fetchAllConfiguredModels,

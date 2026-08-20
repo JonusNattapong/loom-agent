@@ -8,6 +8,7 @@ import {
   fetchModelsForProvider,
   OpenCodeProvider,
   formatOpenCodePrompt,
+  parseModel,
 } from "./index.js";
 
 describe("@loom-agent/providers", () => {
@@ -53,6 +54,10 @@ describe("@loom-agent/providers", () => {
     expect(prompt).toContain("SYSTEM:");
     expect(prompt).toContain("USER:");
     expect(prompt).toContain("read_file");
+  });
+
+  it("parses OpenCode provider/model identifiers", () => {
+    expect(parseModel("anthropic/claude-sonnet")).toEqual({ providerID: "anthropic", modelID: "claude-sonnet" });
   });
 
   describe("Dynamic model fetching", () => {

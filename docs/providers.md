@@ -10,14 +10,14 @@ Loom includes native provider adapters with tool calling / function execution su
 
 ## OpenCode
 
-`OpenCodeProvider` delegates a goal to the locally installed OpenCode coding agent. It is useful when OpenCode already has the model credentials and project context configured:
+`OpenCodeProvider` delegates a goal through OpenCode's official TypeScript SDK and API. It is useful when OpenCode already has the model credentials and project context configured:
 
 ```powershell
 $env:LOOM_PROVIDER = "opencode"
 npm run loom -- repl
 ```
 
-The adapter runs `opencode run` in the current workspace. Set `OPENCODE_COMMAND` when the executable is not on `PATH`. OpenCode manages its own model authentication; Loom does not pass provider API keys to the subprocess.
+By default the SDK starts a local OpenCode API server; set `OPENCODE_BASE_URL` to connect to an existing server instead. OpenCode manages its own model authentication; Loom does not pass provider API keys to OpenCode.
 
 ## 1. Mock Provider
 

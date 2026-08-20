@@ -1,29 +1,34 @@
-import { spawn } from "node:child_process";
+import { createOpencode, createOpencodeClient, type OpencodeClient } from "@opencode-ai/sdk";
 import type { Message, Provider, ProviderRequest, ProviderResponse } from "@loom-agent/core";
 
 export interface OpenCodeProviderOptions {
-  /** Executable name or absolute path. Defaults to `opencode`. */
-  command?: string;
-  /** Directory OpenCode should operate in. Defaults to the current directory. */
+  /** Connect to an already running OpenCode server instead of starting one. */
+  baseUrl?: string;
+  /** Workspace sent to the OpenCode API. */
   cwd?: string;
-  /** Maximum time to wait for a run, in milliseconds. */
+  /** OpenCode server startup timeout in milliseconds. */
   timeoutMs?: number;
-  env?: NodeJS.ProcessEnv;
+  /** Optional OpenCode model in `provider/model` form. */
+  model?: string;
 }
 
-/** Runs the installed OpenCode coding agent as a Loom provider. */
+type OpenCodeHost = { client: OpencodeClient; server?: { close(): void } };
+
+/** Uses OpenCode's official TypeScript SDK and HTTP API. */
 export class OpenCodeProvider implements Provider {
   readonly name = "opencode";
-  private readonly command: string;
   private readonly cwd: string;
   private readonly timeoutMs: number;
-  private readonly env?: NodeJS.ProcessEnv;
+  private readonly baseUrl?: string;
+  private readonly defaultModel?: string;
+  private host?: Promise<OpenCodeHost>;
+  private sessionId?: string;
 
   constructor(options: OpenCodeProviderOptions = {}) {
-    this.command = options.command ?? process.env.OPENCODE_COMMAND ?? "opencode";
     this.cwd = options.cwd ?? process.cwd();
     this.timeoutMs = options.timeoutMs ?? 10 * 60 * 1000;
-    this.env = options.env;
+    this.baseUrl = options.baseUrl ?? process.env.OPENCODE_BASE_URL;
+    this.defaultModel = options.model ?? process.env.OPENCODE_MODEL;
   }
 
   async complete(messages: Message[]): Promise<ProviderResponse> {
@@ -31,71 +36,77 @@ export class OpenCodeProvider implements Provider {
   }
 
   async generate(request: ProviderRequest): Promise<ProviderResponse> {
+    const host = await this.getHost();
+    const session = await this.getSession(host.client);
     const prompt = formatOpenCodePrompt(request);
-    const startedAt = Date.now();
-    const output = await this.run(prompt);
-    return {
-      content: output.trim(),
-      finishReason: "stop",
-      metadata: {
-        provider: this.name,
-        command: this.command,
-        durationMs: Date.now() - startedAt,
-        model: request.model,
+    const model = request.model ?? this.defaultModel;
+    const result = await host.client.session.prompt({
+      path: { id: session },
+      query: { directory: this.cwd },
+      body: {
+        ...(request.system ? { system: request.system } : {}),
+        ...(model ? { model: parseModel(model) } : {}),
+        parts: [{ type: "text", text: prompt }],
       },
+    }) as any;
+    if (result?.error) throw new Error(`OpenCode API error: ${formatError(result.error)}`);
+    const payload = result?.data ?? result;
+    const content = Array.isArray(payload?.parts)
+      ? payload.parts.filter((part: any) => part.type === "text" && !part.ignored).map((part: any) => part.text).join("\n")
+      : "";
+    if (!content.trim()) throw new Error("OpenCode returned an empty response");
+    const info = payload?.info;
+    return {
+      content: content.trim(),
+      finishReason: info?.finish ?? "stop",
+      usage: info?.tokens ? { input_tokens: info.tokens.input, output_tokens: info.tokens.output } : undefined,
+      requestId: info?.id,
+      metadata: { provider: this.name, sessionId: session, model: info?.modelID ?? model, cwd: this.cwd },
     };
   }
 
-  private run(prompt: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const child = spawn(this.command, ["run", prompt], {
-        cwd: this.cwd,
-        env: { ...process.env, ...this.env },
-        shell: process.platform === "win32",
-        stdio: ["ignore", "pipe", "pipe"],
-      });
-      let stdout = "";
-      let stderr = "";
-      let settled = false;
-      const timer = setTimeout(() => {
-        if (settled) return;
-        settled = true;
-        child.kill();
-        reject(new Error(`OpenCode timed out after ${this.timeoutMs}ms`));
-      }, this.timeoutMs);
-      child.stdout.on("data", (chunk: Buffer | string) => { stdout += chunk.toString(); });
-      child.stderr.on("data", (chunk: Buffer | string) => { stderr += chunk.toString(); });
-      child.once("error", (error: NodeJS.ErrnoException) => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        if (error.code === "ENOENT") {
-          reject(new Error("OpenCode is not installed or not on PATH. Install it, then retry."));
-        } else {
-          reject(error);
-        }
-      });
-      child.once("close", (code, signal) => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        if (code !== 0) {
-          const detail = stderr.trim() || `exited with code ${code ?? "unknown"}${signal ? ` (${signal})` : ""}`;
-          reject(new Error(`OpenCode failed: ${detail}`));
-          return;
-        }
-        resolve(stdout);
-      });
-    });
+  /** Stop an SDK-managed OpenCode server. No-op for externally managed servers. */
+  dispose(): void {
+    void this.host?.then((host) => host.server?.close());
+    this.host = undefined;
+    this.sessionId = undefined;
   }
+
+  private async getHost(): Promise<OpenCodeHost> {
+    if (!this.host) {
+      this.host = this.baseUrl
+        ? Promise.resolve({ client: createOpencodeClient({ baseUrl: this.baseUrl, directory: this.cwd }) })
+        : createOpencode({ port: 0, timeout: this.timeoutMs }).then(({ client, server }) => ({ client, server }));
+    }
+    return this.host;
+  }
+
+  private async getSession(client: OpencodeClient): Promise<string> {
+    if (this.sessionId) return this.sessionId;
+    const result = await client.session.create({ query: { directory: this.cwd }, body: { title: "Loom" } }) as any;
+    if (result?.error) throw new Error(`OpenCode session error: ${formatError(result.error)}`);
+    const session = result?.data ?? result;
+    if (!session?.id) throw new Error("OpenCode did not return a session id");
+    this.sessionId = session.id;
+    return session.id;
+  }
+}
+
+export function parseModel(model: string): { providerID: string; modelID: string } {
+  const separator = model.indexOf("/");
+  return separator > 0
+    ? { providerID: model.slice(0, separator), modelID: model.slice(separator + 1) }
+    : { providerID: "opencode", modelID: model };
 }
 
 export function formatOpenCodePrompt(request: ProviderRequest): string {
   const sections: string[] = [];
   if (request.system) sections.push(`SYSTEM:\n${request.system}`);
   sections.push(...request.messages.map((message) => `${message.role.toUpperCase()}:\n${message.content}`));
-  if (request.tools?.length) {
-    sections.push(`AVAILABLE LOOM TOOLS (OpenCode may perform equivalent actions directly):\n${request.tools.map((tool) => `- ${tool.name}: ${tool.description ?? ""}`).join("\n")}`);
-  }
+  if (request.tools?.length) sections.push(`LOOM TOOLS AVAILABLE:\n${request.tools.map((tool) => `- ${tool.name}: ${tool.description ?? ""}`).join("\n")}`);
   return sections.join("\n\n");
+}
+
+function formatError(error: unknown): string {
+  return typeof error === "string" ? error : error instanceof Error ? error.message : JSON.stringify(error);
 }

@@ -40,6 +40,12 @@ export class SelfGrowthEngine {
   const item=this.pending.find(candidate=>candidate.id===id);if(!item)throw new Error(`learning suggestion not found: ${id}`);
   item.status="rejected";return item;
  }
+ feedback(id:string,accepted:boolean):GrowthSuggestion{
+  const item=this.pending.find(candidate=>candidate.id===id);if(!item)throw new Error(`learning suggestion not found: ${id}`);
+  item.confidence=Math.max(0,Math.min(1,item.confidence+(accepted?0.08:-0.15)));
+  item.status=accepted?"approved":"rejected";
+  return item;
+ }
 }
 
 export type SelfCapability=
@@ -68,4 +74,15 @@ export class SelfRuntime {
       : this.policy.requireApprovalForChanges!==false;
   }
   canPersistSecret():boolean{return this.policy.allowSecretPersistence===true;}
+}
+
+export type SelfToolDecision={tool:string;allowed:boolean;requiresApproval:boolean;reason:string};
+export class SelfToolGuard {
+ constructor(private readonly runtime:SelfRuntime,private readonly restricted=new Set(["shell","write_file","replace_file_content","delete_file"])){}
+ decide(tool:string,available:string[],approved=false):SelfToolDecision{
+  if(!this.runtime.isEnabled("tool"))return {tool,allowed:false,requiresApproval:false,reason:"self-tool capability disabled"};
+  if(!available.includes(tool))return {tool,allowed:false,requiresApproval:false,reason:"tool is not in the agent allowlist"};
+  const requiresApproval=this.restricted.has(tool)&&this.runtime.requiresApproval("change");
+  return {tool,allowed:!requiresApproval||approved,requiresApproval,reason:requiresApproval&&!approved?"approval required":"policy allows tool"};
+ }
 }

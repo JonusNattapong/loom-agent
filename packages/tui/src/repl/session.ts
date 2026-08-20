@@ -25,7 +25,7 @@ import { DEFAULT_SLASH_COMMANDS, SlashAutocompleteView } from "./slash-autocompl
 import { SettingsMultiTabDialog, type SettingsTab } from "./settings-tab-dialog.js";
 import { OAuthLoginDialog } from "./oauth-dialog.js";
 import { ApiKeyPromptDialog } from "./api-key-dialog.js";
-import { fetchAllConfiguredModels } from "@loom-agent/providers";
+import { createProvider, fetchAllConfiguredModels } from "@loom-agent/providers";
 
 export interface ReplSessionOptions {
   state: StateStore;
@@ -68,6 +68,8 @@ export class LoomReplSession {
 
   constructor(private readonly options: ReplSessionOptions) {
     this.terminal = new ProcessTerminal();
+    const cwd = this.options.cwd ?? process.cwd();
+    this.terminal.setTitle(`Loom - ${cwd}`);
     this.tui = new TUI(this.terminal);
     this.rootContainer = new Container();
     this.historyContainer = new Container();
@@ -196,6 +198,8 @@ export class LoomReplSession {
   }
 
   async start(): Promise<void> {
+    const cwd = this.options.cwd ?? process.cwd();
+    this.terminal.setTitle(`Loom - ${cwd}`);
     this.tui.start();
     this.notify("info", `Loom ready · provider ${this.options.provider.name} · model ${resolveDisplayModel(this.options.provider, this.options.modelName)}`);
     if (this.options.provider.name === "mock") {
@@ -610,12 +614,13 @@ export class LoomReplSession {
         providerName,
         onSuccess: (apiKey) => {
           handle.hide();
+          process.env.LOOM_PROVIDER = providerId;
+          this.options.provider = createProvider(providerId);
+          this.options.modelName = undefined;
           this.tui.setFocus(this.editor);
           this.tui.requestRender();
           this.appendMessage(chalk.green(`✔ API key configured and saved for ${chalk.bold(providerName)}!`));
-          if (providerId.toLowerCase() !== this.options.provider.name.toLowerCase()) {
-            this.notify("warning", `Key saved for ${providerName}, but active provider is ${this.options.provider.name}. Select /provider to switch.`);
-          }
+          this.notify("success", `Active provider switched to ${providerName}.`);
           resolve();
         },
         onCancel: () => {

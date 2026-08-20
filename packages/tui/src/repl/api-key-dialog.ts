@@ -131,6 +131,19 @@ export class ApiKeyPromptDialog implements Component {
           envContent = `${envContent.trim()}\n${this.envVarName}=${apiKey}\n`;
         }
         await fs.writeFile(envPath, envContent.trim() + "\n", "utf8");
+
+        // Keep the selected provider aligned with the key across restarts.
+        const configPath = join(process.cwd(), ".loom", "config.json");
+        try {
+          const config = JSON.parse(await fs.readFile(configPath, "utf8")) as Record<string, unknown>;
+          const provider = typeof config.provider === "object" && config.provider !== null
+            ? config.provider as Record<string, unknown>
+            : {};
+          config.provider = { ...provider, id: this.props.providerId };
+          await fs.writeFile(configPath, JSON.stringify(config, null, 2) + "\n", "utf8");
+        } catch {
+          // Config may not exist yet; the in-process provider switch still works.
+        }
       } catch {
         // Fallback gracefully if filesystem write fails
       }
